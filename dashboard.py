@@ -42,6 +42,9 @@ COLOR_JSON = {
 def short_address(addr):
     return f"{addr[:6]}...{addr[-4:]}"
 
+def debank_link(addr):
+    return f"[{short_address(addr)}](https://debank.com/profile/{addr})"
+
 def format_usd(val):
     if val >= 1_000_000:
         return f"${val/1_000_000:.2f}M"
@@ -68,7 +71,11 @@ def fetch_token_balances(wallet, chain):
         {
             "Wallet": wallet,
             "Chain": chain,
-            "Token": t.get("optimized_symbol") or t.get("display_symbol") or t.get("symbol"),
+            "Token": " | ".join(filter(None, [
+                t.get("optimized_symbol"),
+                t.get("display_symbol"),
+                t.get("symbol")
+            ])),
             "Token Balance": t["amount"],
             "USD Value": t["amount"] * t.get("price", 0)
         }
@@ -107,7 +114,11 @@ for wallet in selected_wallets:
                     "Blockchain": CHAIN_NAMES.get(p.get("chain"), p.get("chain")),
                     "Classification": item.get("name"),
                     "Wallet": wallet,
-                    "Token": token.get("optimized_symbol") or token.get("display_symbol") or token.get("symbol"),
+                    "Token": " | ".join(filter(None, [
+                        token.get("optimized_symbol"),
+                        token.get("display_symbol"),
+                        token.get("symbol")
+                    ])),
                     "Token Balance": token.get("amount"),
                     "USD Value": token.get("amount", 0) * token.get("price", 0)
                 })
@@ -135,13 +146,11 @@ for i, (chain, val) in enumerate(top_chains.items()):
     [c3, c4][i].metric(f"{chain}", format_usd(val))
 c5.metric("Other Chains", format_usd(other_chains))
 
-# ============ Pie Charts with Plotly ============
+# ============ Pie Charts ============
 st.markdown("### 🔍 Breakdown")
 col1, col2 = st.columns(2)
 
 if not chain_sums.empty:
-    colors = [COLOR_JSON.get(name, None) for name in chain_sums.index]
-    colors = [c for c in colors if c]
     fig1 = px.pie(
         names=chain_sums.index,
         values=chain_sums.values,
@@ -157,8 +166,6 @@ if not df_protocols.empty:
     others_sum = protocol_sums.iloc[10:].sum()
     protocol_sums = pd.concat([top10, pd.Series({"Others": others_sum})])
 
-    colors = [COLOR_JSON.get(name, None) for name in protocol_sums.index]
-    colors = [c for c in colors if c]
     fig2 = px.pie(
         names=protocol_sums.index,
         values=protocol_sums.values,
@@ -177,7 +184,7 @@ if not df_wallets.empty:
     df_wallets = df_wallets.sort_values("USD Value", ascending=False)
     df_wallets["USD Value"] = df_wallets["USD Value"].apply(format_usd)
     df_wallets["Token Balance"] = df_wallets["Token Balance"].apply(lambda x: f"{x:,.4f}")
-    df_wallets["Wallet"] = df_wallets["Wallet"].apply(short_address)
+    df_wallets["Wallet"] = df_wallets["Wallet"].apply(debank_link)
     df_wallets = df_wallets[["Wallet", "Chain", "Token", "Token Balance", "USD Value"]]
     st.dataframe(df_wallets, use_container_width=True, hide_index=True)
 else:
@@ -191,7 +198,7 @@ st.subheader("🏦 DeFi Protocol Positions")
 if not df_protocols.empty:
     df_protocols["USD Value"] = df_protocols["USD Value"].apply(format_usd)
     df_protocols["Token Balance"] = df_protocols["Token Balance"].apply(lambda x: f"{x:,.4f}")
-    df_protocols["Wallet"] = df_protocols["Wallet"].apply(short_address)
+    df_protocols["Wallet"] = df_protocols["Wallet"].apply(debank_link)
 
     protocol_order = df_protocols.groupby("Protocol")["USD Value"].apply(lambda x: sum(float(v.strip('$KM')) * (1_000_000 if 'M' in v else 1_000 if 'K' in v else 1) for v in x)).sort_values(ascending=False)
 
@@ -212,3 +219,4 @@ if not df_protocols.empty:
             st.dataframe(display_df, use_container_width=True, hide_index=True)
 else:
     st.info("No DeFi protocol positions found.")
+
