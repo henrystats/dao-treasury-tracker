@@ -7,6 +7,7 @@ import plotly.express as px
 st.set_page_config(page_title="DeFi Treasury Tracker", layout="wide")
 st.title("📊 DeFi Treasury Tracker")
 
+# Pull your Debank key from secrets.toml under debank_api_key
 ACCESS_KEY = st.secrets["ACCESS_KEY"]
 WALLETS = [
     "0x86fBaEB3D6b5247F420590D303a6ffC9cd523790",
@@ -71,7 +72,7 @@ def fetch_token_balances(wallet, chain):
                 t.get("symbol")
             ])),
             "Token Balance": t["amount"],
-            "USD Value": t["amount"] * t.get("price", 0)
+            "USD Value": t["amount"] * t.get("price", 0),
         }
         for t in data if t.get("price", 0) > 0
     ]
@@ -80,6 +81,16 @@ def fetch_protocols(wallet):
     url = "https://pro-openapi.debank.com/v1/user/all_complex_protocol_list"
     params = {"id": wallet, "chain_ids": ",".join(CHAIN_IDS)}
     return requests.get(url, params=params, headers=headers).json()
+
+def df_to_markdown(df, cols):
+    """Build a Markdown table string for these columns."""
+    header = "| " + " | ".join(cols) + " |"
+    sep    = "| " + " | ".join("---" for _ in cols) + " |"
+    rows   = []
+    for _, r in df.iterrows():
+        row = "| " + " | ".join(str(r[c]) for c in cols) + " |"
+        rows.append(row)
+    return "\n".join([header, sep] + rows)
 
 # ============ Sidebar Filters ============
 selected_wallets = st.sidebar.multiselect("Filter by Wallet", options=WALLETS, default=WALLETS)
@@ -98,7 +109,8 @@ protocol_data = []
 for w in selected_wallets:
     for p in fetch_protocols(w):
         for item in p.get("portfolio_item_list", []):
-            tokens = item.get("detail", {}).get("supply_token_list", []) + item.get("detail", {}).get("reward_token_list", [])
+            tokens = item.get("detail", {}).get("supply_token_list", []) + \
+                     item.get("detail", {}).get("reward_token_list", [])
             for t in tokens:
                 protocol_data.append({
                     "Protocol": p.get("name"),
@@ -111,15 +123,15 @@ for w in selected_wallets:
                         t.get("symbol")
                     ])),
                     "Token Balance": t.get("amount", 0),
-                    "USD Value": t.get("amount", 0) * t.get("price", 0)
+                    "USD Value": t.get("amount", 0) * t.get("price", 0),
                 })
 df_protocols = pd.DataFrame(protocol_data)
 df_protocols = df_protocols[df_protocols["Blockchain"].isin(selected_chains)]
 
 # ============ Metrics ============
-total_usd = df_wallets["USD Value"].sum() + df_protocols["USD Value"].sum()
-total_defi = df_protocols["USD Value"].sum()
-chain_sums = (
+total_usd   = df_wallets["USD Value"].sum() + df_protocols["USD Value"].sum()
+total_defi  = df_protocols["USD Value"].sum()
+chain_sums  = (
     df_wallets.groupby("Chain")["USD Value"].sum()
       .add(df_protocols.groupby("Blockchain")["USD Value"].sum(), fill_value=0)
       .sort_values(ascending=False)
@@ -128,8 +140,8 @@ top_chains = chain_sums.head(2)
 other_chains = chain_sums[2:].sum()
 
 c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric("📦 Total Value", format_usd(total_usd))
-c2.metric("🔄 DeFi Protocols", format_usd(total_defi))
+c1.metric("📦 Total Value",      format_usd(total_usd))
+c2.metric("🔄 DeFi Protocols",   format_usd(total_defi))
 for i,(ch,val) in enumerate(top_chains.items()):
     [c3,c4][i].metric(ch, format_usd(val))
 c5.metric("Other Chains", format_usd(other_chains))
@@ -150,10 +162,11 @@ if not chain_sums.empty:
     col1.plotly_chart(fig1, use_container_width=True)
 
 if not df_protocols.empty:
-    prot_sums = df_protocols.groupby("Protocol")["USD Value"].sum().sort_values(ascending=False)
-    top10 = prot_sums.head(10)
-    rest = prot_sums.iloc[10:].sum()
-    prot_sums = pd.concat([top10, pd.Series({"Others":rest})])
+    prot_sums = df_protocols.groupby("Protocol")["USD Value"].sum()\
+                           .sort_values(ascending=False)
+    top10     = prot_sums.head(10)
+    rest      = prot_sums.iloc[10:].sum()
+    prot_sums = pd.concat([top10, pd.Series({"Others": rest})])
     fig2 = px.pie(
         names=prot_sums.index,
         values=prot_sums.values,
@@ -166,47 +179,48 @@ if not df_protocols.empty:
 
 st.markdown("---")
 
-# ============ Tables (Markdown) ============
+# ============ Wallet Balances Table ============
 st.subheader("💰 Wallet Balances")
 if not df_wallets.empty:
     df = df_wallets.sort_values("USD Value", ascending=False).copy()
-    df["USD Value"] = df["USD Value"].apply(format_usd)
+    df["USD Value"]     = df["USD Value"].apply(format_usd)
     df["Token Balance"] = df["Token Balance"].apply(lambda x: f"{x:,.4f}")
-    df["Wallet"] = df["Wallet"].apply(format_wallet_link)
-    st.markdown(df[["Wallet","Chain","Token","Token Balance","USD Value"]]
-                .to_markdown(index=False), unsafe_allow_html=True)
+    df["Wallet"]        = df["Wallet"].apply(format_wallet_link)
+    md = df_to_markdown(df, ["Wallet","Chain","Token","Token Balance","USD Value"])
+    st.markdown(md, unsafe_allow_html=True)
 else:
     st.info("No wallet balances found.")
 
+# ============ DeFi Protocols Table ============
 st.subheader("🏦 DeFi Protocol Positions")
 if not df_protocols.empty:
     dfp = df_protocols.copy()
-    dfp["USD Value"] = dfp["USD Value"].apply(format_usd)
+    dfp["USD Value"]     = dfp["USD Value"].apply(format_usd)
     dfp["Token Balance"] = dfp["Token Balance"].apply(lambda x: f"{x:,.4f}")
-    dfp["Wallet"] = dfp["Wallet"].apply(format_wallet_link)
+    dfp["Wallet"]        = dfp["Wallet"].apply(format_wallet_link)
 
     # order protocols by total USD
     order = dfp.groupby("Protocol")["USD Value"]\
                .apply(lambda vs: sum(
-                   float(v.strip("$MK"))*(1e6 if v.endswith("M") else 1e3 if v.endswith("K") else 1)
+                   float(v.strip("$MK")) *
+                   (1e6 if v.endswith("M") else 1e3 if v.endswith("K") else 1)
                    for v in vs
                )).sort_values(ascending=False)
 
     for proto in order.index:
         total = order[proto]
         st.markdown(
-            f'<h3><img src="{LOGO_URL}" width="24" style="vertical-align:middle;"> '
-            f'{proto} ({format_usd(total)})</h3>',
+            f'<h3><img src="{LOGO_URL}" width="24" '
+            f'style="vertical-align:middle;"> {proto} ({format_usd(total)})</h3>',
             unsafe_allow_html=True
         )
-        sub = dfp[dfp["Protocol"]==proto]
+        sub = dfp[dfp["Protocol"] == proto]
         for cls in sub["Classification"].unique():
             st.markdown(f"### {cls}")
-            part = sub[sub["Classification"]==cls]\
+            part = sub[sub["Classification"] == cls]\
                    .sort_values("USD Value", ascending=False)
-            st.markdown(part[["Wallet","Blockchain","Token","Token Balance","USD Value"]]
-                        .to_markdown(index=False), unsafe_allow_html=True)
+            md2 = df_to_markdown(part, ["Wallet","Blockchain","Token","Token Balance","USD Value"])
+            st.markdown(md2, unsafe_allow_html=True)
 else:
     st.info("No DeFi protocol positions found.")
-
 
