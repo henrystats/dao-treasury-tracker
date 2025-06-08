@@ -7,7 +7,6 @@ import plotly.express as px
 st.set_page_config(page_title="DeFi Treasury Tracker", layout="wide")
 st.title("📊 DeFi Treasury Tracker")
 
-# Pull your Debank key from secrets.toml under [debank_api_key]
 ACCESS_KEY = st.secrets["ACCESS_KEY"]
 WALLETS = [
     "0x86fBaEB3D6b5247F420590D303a6ffC9cd523790",
