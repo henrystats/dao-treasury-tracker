@@ -2,3 +2,5 @@ streamlit==1.32.2
 pandas
 requests
 plotly
+gspread>=5.12
+google-auth>=2.29
