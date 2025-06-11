@@ -1,13 +1,13 @@
 import streamlit as st, requests, pandas as pd, plotly.express as px, json, gspread
-import datetime, pytz
+import datetime
 from google.oauth2.service_account import Credentials
 
 # ───────────────────────── CONFIG ────────────────────────────
 st.set_page_config(page_title="DeFi Treasury Tracker", layout="wide")
 st.title("📊 DeFi Treasury Tracker")
 
-ACCESS_KEY = st.secrets["ACCESS_KEY"]            # Debank Pro key
-SHEET_ID   = st.secrets["sheet_id"]              # Google-Sheets ID
+ACCESS_KEY = st.secrets["ACCESS_KEY"]
+SHEET_ID   = st.secrets["sheet_id"]
 SA_INFO    = json.loads(st.secrets["gcp_service_account"])
 
 CHAIN_IDS   = ["eth", "arb", "base", "scrl"]
@@ -31,8 +31,7 @@ COLOR_JSON = {
 # ───────────── Google-Sheet helpers ─────────────
 def _gc():
     creds = Credentials.from_service_account_info(
-        SA_INFO,
-        scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        SA_INFO, scopes=["https://www.googleapis.com/auth/spreadsheets"]
     )
     return gspread.authorize(creds)
 
@@ -50,12 +49,12 @@ WALLETS = load_wallets()
 
 # ───────────── helper funcs ─────────────
 def first_symbol(t): return t.get("optimized_symbol") or t.get("display_symbol") or t.get("symbol")
-def link_wallet(a): return f"[{a[:6]}…{a[-4:]}](https://debank.com/profile/{a})"
-def fmt_usd(v): return f"${v/1e6:.2f}M" if v>=1e6 else f"${v/1e3:.1f}K" if v>=1e3 else f"${v:.2f}"
+def link_wallet(a):  return f"[{a[:6]}…{a[-4:]}](https://debank.com/profile/{a})"
+def fmt_usd(v):      return f"${v/1e6:.2f}M" if v>=1e6 else f"${v/1e3:.1f}K" if v>=1e3 else f"${v:.2f}"
 
-def token_category(tok:str) -> str:
+def token_category(tok:str)->str:
     t=tok.upper()
-    if "ETH" in t: return "ETH"
+    if "ETH" in t:                    return "ETH"
     if any(s in t for s in ("USDC","USDT")): return "Stables"
     return tok
 
@@ -74,11 +73,8 @@ def fetch_tokens(wallet,chain):
     for t in r.json():
         price,amt=t.get("price",0),t.get("amount",0)
         if price<=0: continue
-        out.append({"Wallet":wallet,
-                    "Chain":CHAIN_NAMES.get(chain,chain),
-                    "Token":first_symbol(t),
-                    "Token Balance":amt,
-                    "USD Value":amt*price})
+        out.append({"Wallet":wallet,"Chain":CHAIN_NAMES.get(chain,chain),
+                    "Token":first_symbol(t),"Token Balance":amt,"USD Value":amt*price})
     return out
 
 @st.cache_data(ttl=600,show_spinner=False)
@@ -124,11 +120,9 @@ def write_snapshot():
         ws.append_row(["timestamp","history_type","name","usd_value"])
 
     last=ws.get_all_values()[-1] if ws.row_count>1 else []
-    if last and last[0]==hour: return    # already snap-shotted
+    if last and last[0]==hour: return
 
-    # protocol rows
     rows=[[hour,"protocol",p,round(v,2)] for p,v in df_protocols.groupby("Protocol")["USD Value"].sum().items()]
-    # token-category rows
     token_sum=(df_wallets.assign(cat=df_wallets["Token"].map(token_category))
                .groupby("cat")["USD Value"].sum())
     rows += [[hour,"token",c,round(v,2)] for c,v in token_sum.items()]
@@ -138,7 +132,7 @@ def write_snapshot():
 def _hourly(): write_snapshot(); return True
 _hourly()
 
-# ───────────── top-line metrics ─────────────
+# ───────────── top-line metric ─────────────
 tot_val=df_wallets["USD Value"].sum()+df_protocols["USD Value"].sum()
 st.metric("📦 Total Value", fmt_usd(tot_val))
 
@@ -147,32 +141,31 @@ def load_history():
     try:
         ws=_gc().open_by_key(SHEET_ID).worksheet("history")
         h=pd.DataFrame(ws.get_all_records())
-        h["timestamp"]=pd.to_datetime(h["timestamp"], errors="coerce")
+        h["timestamp"]=pd.to_datetime(h["timestamp"], utc=True, errors="coerce")
         return h.dropna(subset=["timestamp"])
     except: return pd.DataFrame(columns=["timestamp","history_type","name","usd_value"])
 
 hist=load_history()
-week=hist[hist["timestamp"]>=pd.Timestamp.utcnow()-pd.Timedelta(days=7)]
+cutoff = pd.Timestamp.utcnow().tz_localize("UTC") - pd.Timedelta(days=7)
+week   = hist[hist["timestamp"] >= cutoff]
 
 st.markdown("### 📈 History – last 7 days")
 cA,cB=st.columns(2)
 
 if not week.empty:
-    # protocol area
-    p=week[week["history_type"]=="protocol"]
+    p=week[week["history_type"]=="protocol"].copy()
     if not p.empty:
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
-        p["name"]=p["name"].where(p["name"].isin(top),"Others")
+        p.loc[~p["name"].isin(top),"name"]="Others"
         cA.plotly_chart(px.area(p,x="timestamp",y="usd_value",color="name",
-                                title="Top Protocols (USD)").update_layout(showlegend=True),
+                                title="Top Protocols").update_layout(showlegend=True),
                         use_container_width=True)
-    # token area
-    t=week[week["history_type"]=="token"]
+    t=week[week["history_type"]=="token"].copy()
     if not t.empty:
         cats=t.groupby("name")["usd_value"].last().nlargest(9).index
-        t["name"]=t["name"].where(t["name"].isin(cats),"Others")
+        t.loc[~t["name"].isin(cats),"name"]="Others"
         cB.plotly_chart(px.area(t,x="timestamp",y="usd_value",color="name",
-                                title="Token Categories (USD)").update_layout(showlegend=True),
+                                title="Token Categories").update_layout(showlegend=True),
                         use_container_width=True)
 
 st.markdown("---")
@@ -198,10 +191,11 @@ if not df_protocols.empty:
         float(v.strip("$MK"))*(1e6 if v.endswith("M") else 1e3 if v.endswith("K") else 1) for v in vs)).sort_values(ascending=False)
     for proto in order.index:
         st.markdown(f'<h3><img src="{PROTOCOL_LOGOS.get(proto,"")}" width="24" '
-                    f'style="vertical-align:middle;margin-right:6px;">{proto} ({fmt_usd(order[proto])})</h3>', unsafe_allow_html=True)
+                    f'style="vertical-align:middle;margin-right:6px;">{proto} ({fmt_usd(order[proto])})</h3>',unsafe_allow_html=True)
         sub=dfp[dfp["Protocol"]==proto]
         sub["Token"]=sub["Token"].apply(lambda t:f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
         st.markdown(md_table(sub[["Wallet","Token","USD Value"]].assign(Wallet=sub["Wallet"].apply(link_wallet)),
                              ["Wallet","Token","USD Value"]), unsafe_allow_html=True)
 else:
     st.info("No DeFi protocol positions found.")
+
