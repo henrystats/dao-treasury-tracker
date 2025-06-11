@@ -63,6 +63,9 @@ def md_table(df,cols):
     rows=["| "+" | ".join(str(r[c]) for c in cols)+" |" for _,r in df.iterrows()]
     return "\n".join([hdr,sep,*rows])
 
+def ensure_utc(ts: pd.Timestamp) -> pd.Timestamp:
+    return ts if ts.tzinfo is not None else ts.tz_localize("UTC")
+
 # ───────────── Debank fetchers (10-min cache) ─────────────
 @st.cache_data(ttl=600,show_spinner=False)
 def fetch_tokens(wallet,chain):
@@ -145,9 +148,10 @@ def load_history():
         return h.dropna(subset=["timestamp"])
     except: return pd.DataFrame(columns=["timestamp","history_type","name","usd_value"])
 
-hist=load_history()
-cutoff = pd.Timestamp.utcnow().tz_localize("UTC") - pd.Timedelta(days=7)
-week   = hist[hist["timestamp"] >= cutoff]
+hist    = load_history()
+now_utc = ensure_utc(pd.Timestamp.utcnow())
+cutoff  = now_utc - pd.Timedelta(days=7)
+week    = hist[hist["timestamp"] >= cutoff]
 
 st.markdown("### 📈 History – last 7 days")
 cA,cB=st.columns(2)
