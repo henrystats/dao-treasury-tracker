@@ -177,25 +177,33 @@ c5.metric("Other Chains",fmt_usd(others))
 st.markdown("### 🔍 Breakdown")
 pie1,pie2=st.columns(2)
 
+# ---------- pie 1 ----------
 if not chain_sum.empty:
+    chain_vals = pd.to_numeric(chain_sum, errors="coerce").fillna(0).tolist()
     pie1.plotly_chart(
-        px.pie(names=chain_sum.index,
-               values=chain_sum.values.astype(float),
-               hole=.4,
-               color_discrete_sequence=[COLOR_JSON.get(c,"#ccc") for c in chain_sum.index])
-        .update_traces(textinfo="percent+label"),
-        use_container_width=True)
+        px.pie(
+            names=chain_sum.index.tolist(),
+            values=chain_vals,
+            hole=.4,
+            color_discrete_sequence=[COLOR_JSON.get(c, "#ccc") for c in chain_sum.index]
+        ).update_traces(textinfo="percent+label"),
+        use_container_width=True
+    )
 
+# ---------- pie 2 ----------
 if not df_protocols.empty:
-    ps=df_protocols.groupby("Protocol")["USD Value"].sum().astype(float).sort_values(ascending=False)
-    ps=pd.concat([ps.head(10), pd.Series({"Others": ps.iloc[10:].sum()})])
+    ps = df_protocols.groupby("Protocol")["USD Value"].sum()
+    ps = pd.concat([ps.head(10), pd.Series({"Others": ps.iloc[10:].sum()})])
+    proto_vals = pd.to_numeric(ps, errors="coerce").fillna(0).tolist()
     pie2.plotly_chart(
-        px.pie(names=ps.index,
-               values=ps.values.astype(float),
-               hole=.4,
-               color_discrete_sequence=[COLOR_JSON.get(p,"#ccc") for p in ps.index])
-        .update_traces(textinfo="percent+label"),
-        use_container_width=True)
+        px.pie(
+            names=ps.index.tolist(),
+            values=proto_vals,
+            hole=.4,
+            color_discrete_sequence=[COLOR_JSON.get(p, "#ccc") for p in ps.index]
+        ).update_traces(textinfo="percent+label"),
+        use_container_width=True
+    )
 
 st.markdown("---")
 
@@ -218,7 +226,7 @@ area1,area2=st.columns(2)
 if not week.empty:
     p=week[week["history_type"]=="protocol"].copy()
     if not p.empty:
-        p["usd_value"]=pd.to_numeric(p["usd_value"],errors="coerce")
+        p["usd_value"] = pd.to_numeric(p["usd_value"], errors="coerce").fillna(0)
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
         p.loc[~p["name"].isin(top),"name"]="Others"
         fig_p=px.area(p,x="timestamp",y="usd_value",color="name",
@@ -228,7 +236,7 @@ if not week.empty:
 
     t=week[week["history_type"]=="token"].copy()
     if not t.empty:
-        t["usd_value"]=pd.to_numeric(t["usd_value"],errors="coerce")
+        t["usd_value"] = pd.to_numeric(t["usd_value"], errors="coerce").fillna(0)
         cats=["ETH","Stables","Others"]
         t.loc[~t["name"].isin(cats),"name"]="Others"
         fig_t=px.area(t,x="timestamp",y="usd_value",color="name",
