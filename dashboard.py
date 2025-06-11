@@ -33,7 +33,7 @@ st.markdown(
     """<style>
        table{table-layout:fixed;width:100%}
        th,td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-       </style>""",
+    </style>""",
     unsafe_allow_html=True,
 )
 
@@ -63,7 +63,7 @@ def fmt_usd(v):      return f"${v/1e6:.2f}M" if v>=1e6 else f"${v/1e3:.1f}K" if 
 
 def token_category(tok:str)->str:
     T = tok.upper()
-    if "ETH" in T: return "ETH"
+    if "ETH" in T:                                   return "ETH"
     if any(k in T for k in ("USDC","USDT","DAI","USDE")): return "Stables"
     return "Others"
 
@@ -168,16 +168,20 @@ c5.metric("Other Chains", fmt_usd(others))
 st.markdown("### 🔍 Breakdown")
 pie1,pie2=st.columns(2)
 if not chain_sum.empty:
-    pie1.plotly_chart(px.pie(names=chain_sum.index, values=chain_sum.values, hole=.4,
-        color_discrete_sequence=[COLOR_JSON.get(c,"#ccc") for c in chain_sum.index])
-        .update_traces(textinfo="percent+label"), use_container_width=True)
+    pie1.plotly_chart(
+        px.pie(names=chain_sum.index, values=chain_sum.values.astype(float), hole=.4,
+               color_discrete_sequence=[COLOR_JSON.get(c,"#ccc") for c in chain_sum.index])
+        .update_traces(textinfo="percent+label"),
+        use_container_width=True)
 
 if not df_protocols.empty:
     ps=df_protocols.groupby("Protocol")["USD Value"].sum().sort_values(ascending=False)
     ps=pd.concat([ps.head(10), pd.Series({"Others": ps.iloc[10:].sum()})])
-    pie2.plotly_chart(px.pie(names=ps.index, values=ps.values, hole=.4,
-        color_discrete_sequence=[COLOR_JSON.get(p,"#ccc") for p in ps.index])
-        .update_traces(textinfo="percent+label"), use_container_width=True)
+    pie2.plotly_chart(
+        px.pie(names=ps.index, values=ps.values.astype(float), hole=.4,
+               color_discrete_sequence=[COLOR_JSON.get(p,"#ccc") for p in ps.index])
+        .update_traces(textinfo="percent+label"),
+        use_container_width=True)
 
 st.markdown("---")
 
@@ -200,16 +204,19 @@ if not week.empty:
     if not p.empty:
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
         p.loc[~p["name"].isin(top),"name"]="Others"
-        area1.plotly_chart(px.area(p,x="timestamp",y="usd_value",color="name",
-            title="Top Protocols (USD)").update_layout(showlegend=True),
-            use_container_width=True)
+        fig_p=px.area(p,x="timestamp",y="usd_value",color="name",
+                      title="Top Protocols (USD)")
+        fig_p.update_yaxes(tickformat="$,.0f")
+        area1.plotly_chart(fig_p,use_container_width=True)
+
     t=week[week["history_type"]=="token"].copy()
     if not t.empty:
         cats=["ETH","Stables","Others"]
         t.loc[~t["name"].isin(cats),"name"]="Others"
-        area2.plotly_chart(px.area(t,x="timestamp",y="usd_value",color="name",
-            title="Token Categories (USD)").update_layout(showlegend=True),
-            use_container_width=True)
+        fig_t=px.area(t,x="timestamp",y="usd_value",color="name",
+                      title="Token Categories (USD)")
+        fig_t.update_yaxes(tickformat="$,.0f")
+        area2.plotly_chart(fig_t,use_container_width=True)
 
 st.markdown("---")
 
@@ -248,8 +255,7 @@ if not df_protocols.empty:
             st.markdown(f"### {cls}")
             part=sub[sub["Classification"]==cls].copy()\
                  .sort_values("USD Value",ascending=False)
-            # rename for nicer header + consistency
-            part = part.rename(columns={"Blockchain":"Chain"})
+            part=part.rename(columns={"Blockchain":"Chain"})
             part["Token"]=part["Token"].apply(lambda t:
                 f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
             st.markdown(md_table(
