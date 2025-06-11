@@ -28,7 +28,7 @@ COLOR_JSON = {
     "Curve":"#FF007A","Aave":"#B6509E","Lido":"#00A3FF","Aerodrome":"#1AAB9B",
 }
 
-# ──────── inject CSS so all tables keep same width ────────
+# ──────── inject CSS so tables keep fixed width ────────
 st.markdown(
     """<style>
        table{table-layout:fixed;width:100%}
@@ -47,8 +47,8 @@ def _gc():
 @st.cache_data(ttl=600)
 def load_wallets():
     try:
-        ws  = _gc().open_by_key(SHEET_ID).worksheet("addresses")
-        w   = [v.strip() for v in ws.col_values(1) if v.strip().startswith("0x")]
+        ws = _gc().open_by_key(SHEET_ID).worksheet("addresses")
+        w  = [v.strip() for v in ws.col_values(1) if v.strip().startswith("0x")]
         return w or ["0xf40bcc0845528873784F36e5C105E62a93ff7021"]
     except Exception as e:
         st.warning(f"⚠️ Sheets fetch failed, using fallback wallet. ({e})")
@@ -248,10 +248,12 @@ if not df_protocols.empty:
             st.markdown(f"### {cls}")
             part=sub[sub["Classification"]==cls].copy()\
                  .sort_values("USD Value",ascending=False)
+            # rename for nicer header + consistency
+            part = part.rename(columns={"Blockchain":"Chain"})
             part["Token"]=part["Token"].apply(lambda t:
                 f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
             st.markdown(md_table(
-                part[["Wallet","Blockchain","Token","Token Balance","USD Value"]],
+                part[["Wallet","Chain","Token","Token Balance","USD Value"]],
                 ["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
 else:
