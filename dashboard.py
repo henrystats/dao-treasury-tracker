@@ -106,6 +106,8 @@ for w in sel_wallets:
     for cid in CHAIN_IDS: wallet_rows+=fetch_tokens(w,cid)
 df_wallets=pd.DataFrame(wallet_rows)
 df_wallets=df_wallets[df_wallets["Chain"].isin(sel_chains)]
+# ensure USD Value is numeric for charts
+df_wallets["USD Value"] = pd.to_numeric(df_wallets["USD Value"], errors="coerce")
 
 prot_rows=[]
 for w in sel_wallets:
@@ -124,6 +126,8 @@ for w in sel_wallets:
                                   "Token Balance":amt,"USD Value":amt*price})
 df_protocols=pd.DataFrame(prot_rows)
 df_protocols=df_protocols[df_protocols["Blockchain"].isin(sel_chains)]
+# ensure USD Value is numeric for charts
+df_protocols["USD Value"] = pd.to_numeric(df_protocols["USD Value"], errors="coerce")
 
 # ───────────── snapshot (unchanged) ─────────────
 def write_snapshot():
