@@ -312,7 +312,18 @@ if not df_protocols.empty:
 
         sub = dfp[dfp["Protocol"] == proto].copy()
 
-        for cls in sub["Classification"].dropna().unique():
+                # --- order classifications (sub-categories) by total USD value ---
+        cls_order = (
+            dfp_raw[dfp_raw["Protocol"] == proto]
+            .groupby("Classification")["USD Value"]
+            .sum()
+            .sort_values(ascending=False)
+            .index
+        )
+
+        for cls in cls_order:
+            if pd.isna(cls):            # skip empty classifications
+                continue
             st.markdown(f"<h4 style='margin:6px 0 2px'>{cls}</h4>", unsafe_allow_html=True)
 
             # ── special handling for Liquidity Pool rows ──
