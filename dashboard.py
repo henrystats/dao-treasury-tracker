@@ -30,8 +30,18 @@ COLOR_JSON = {
 # ──────── CSS for fixed-width tables ────────
 st.markdown("""
 <style>
-table{table-layout:fixed;width:100%}
-th,td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table {table-layout:fixed;width:100%}
+
+/* keep long text from overflowing */
+th,td {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* new column widths – order: Wallet | Chain | Token | Token Balance | USD Value */
+th:nth-child(1), td:nth-child(1) {width:10%}   /* Wallet  */
+th:nth-child(2), td:nth-child(2) {width:10%}   /* Chain   */
+th:nth-child(3), td:nth-child(3) {width:50%}   /* Token   */
+th:nth-child(4), td:nth-child(4) {width:20%}   /* Token Balance */
+th:nth-child(5), td:nth-child(5) {width:10%}   /* USD Value */
+
 </style>""", unsafe_allow_html=True)
 
 # ───────────── Google-Sheets helpers ─────────────
