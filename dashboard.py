@@ -154,16 +154,14 @@ def _hourly(): write_snapshot(); return True
 _hourly()
 
 # ───────────── counters ─────────────
-last_updated = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 tot_val  = df_wallets["USD Value"].sum()+df_protocols["USD Value"].sum()
 tot_defi = df_protocols["USD Value"].sum()
 tot_wal  = df_wallets["USD Value"].sum()
 
-cA,cB,cC,cD = st.columns(4)
-cA.metric("📦 Total Value",        fmt_usd(tot_val))
-cB.metric("🏦 DeFi Protocols",     fmt_usd(tot_defi))
-cC.metric("👛 Wallet Balances",    fmt_usd(tot_wal))
-cD.metric("⏰ Last Update",         last_updated)
+cA,cB,cC = st.columns(3)
+cA.metric("📦 Total Value",  fmt_usd(tot_val))
+cB.metric("DeFi Protocols",  fmt_usd(tot_defi))
+cC.metric("Wallet Balances", fmt_usd(tot_wal))
 
 # ───────────── breakdown pies ─────────────
 st.markdown("## 🔍 DAO Treasury Breakdown")
@@ -174,13 +172,12 @@ chain_sum=(df_wallets.groupby("Chain")["USD Value"].sum()
           +df_protocols.groupby("Blockchain")["USD Value"].sum()).astype(float)\
           .sort_values(ascending=False)
 if not chain_sum.empty:
-    chain_df=chain_sum.reset_index(names=["chain","usd"])   #  ← pandas ≤1.5 safe
+    chain_df=chain_sum.reset_index(name="usd").rename(columns={"index":"chain"})
     fig_chain=px.pie(chain_df,names="chain",values="usd",hole=.4,
                      color_discrete_sequence=[COLOR_JSON.get(c,"#ccc") for c in chain_df["chain"]])
-    fig_chain.update_traces(
-        texttemplate="%{label}<br>%{percent}<br>%{customdata}",
-        customdata=[fmt_usd(v) for v in chain_df["usd"]],
-        hovertemplate="chain = %{label}<br>value = %{customdata}<extra></extra>")
+    fig_chain.update_traces(texttemplate="%{label}<br>%{percent}<br>$%{customdata}",
+                            customdata=[fmt_usd(v) for v in chain_df["usd"]],
+                            hovertemplate="chain = %{label}<br>value = %{customdata}<extra></extra>")
     fig_chain.update_layout(title_text="By Chain")
     pie1_col.plotly_chart(fig_chain,use_container_width=True)
 
@@ -192,15 +189,15 @@ if not df_protocols.empty or not df_wallets.empty:
     top5=proto_sum.head(5)
     if proto_sum.size>5:
         top5.loc["Others"]=proto_sum.iloc[5:].sum()
-    proto_df=top5.reset_index(names=["protocol","usd"])
+    proto_df=top5.reset_index(name="usd").rename(columns={"index":"protocol"})
     fig_proto=px.pie(proto_df,names="protocol",values="usd",hole=.4,
                      color_discrete_sequence=[COLOR_JSON.get(p,"#ccc") for p in proto_df["protocol"]])
-    fig_proto.update_traces(
-        texttemplate="%{label}<br>%{percent}<br>%{customdata}",
-        customdata=[fmt_usd(v) for v in proto_df["usd"]],
-        hovertemplate="protocol = %{label}<br>value = %{customdata}<extra></extra>")
+    fig_proto.update_traces(texttemplate="%{label}<br>%{percent}<br>$%{customdata}",
+                            customdata=[fmt_usd(v) for v in proto_df["usd"]],
+                            hovertemplate="protocol = %{label}<br>value = %{customdata}<extra></extra>")
     fig_proto.update_layout(title_text="By DeFi Protocols")
     pie2_col.plotly_chart(fig_proto,use_container_width=True)
+
 
 st.markdown("---")
 
