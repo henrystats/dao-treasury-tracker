@@ -351,6 +351,9 @@ if not df_protocols.empty:
 
                 part = pd.DataFrame(agg_rows).sort_values("USD Value", ascending=False)
                 part["USD Value"] = part["USD Value"].apply(fmt_usd)
+                for col in ["Wallet", "Chain", "Token", "Token Balance", "USD Value"]:
+                    if col not in part.columns:
+                        part[col] = ""
 
             # ── other classifications ──
             else:
