@@ -26,6 +26,12 @@ COLOR_JSON = {
     "Ethereum":"#627EEA","Arbitrum":"#28A0F0","Base":"#0052FF","Scroll":"#FEDA03",
     "Curve":"#FF007A","Aave":"#B6509E","Lido":"#00A3FF","Aerodrome":"#1AAB9B",
 }
+BLOCKCHAIN_LOGOS = {
+    "Ethereum": "https://static.debank.com/image/coin/logo_url/eth/6443cdccced33e204d90cb723c632917.png",
+    "Arbitrum": "https://static.debank.com/image/project/logo_url/arbitrum/fe4aa81509852ffb62ddb29e671c9c8a.png",
+    "Base":      "https://static.debank.com/image/project/logo_url/base/ba1672b3537195839d1eed6f60c89bdc.png",
+    "Scroll":    "https://static.debank.com/image/project/logo_url/scroll/5adf9813ba74793e611b1bf3e0a18dd6.png",
+}
 
 # ──────── CSS for fixed-width tables ────────
 st.markdown("""
@@ -280,8 +286,13 @@ if not df_wallets.empty:
     df["USD Value"]=df["USD Value"].apply(fmt_usd)
     df["Token Balance"]=df["Token Balance"].apply(lambda x:f"{x:,.4f}")
     df["Wallet"]=df["Wallet"].apply(link_wallet)
-    df["Token"]=df["Token"].apply(
-        lambda t:f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
+    df["Token"] = df.apply(
+        lambda r: f'<img src="{TOKEN_LOGOS.get(r.Token) or BLOCKCHAIN_LOGOS.get(r.Chain,"")}" '
+                  f'width="16" style="vertical-align:middle;margin-right:4px;"> {r.Token}',
+        axis=1
+    )
+    # df["Token"]=df["Token"].apply(
+    #     lambda t:f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
     st.markdown(md_table(df,["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
 else:
