@@ -360,10 +360,16 @@ if not df_protocols.empty:
                     )
 
                     token_col = " + ".join(
-                        f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
-                        f'style="vertical-align:middle;margin-right:4px;"> {t}'
+                        f'<img src="{TOKEN_LOGOS.get(t) or BLOCKCHAIN_LOGOS.get(grp["Chain"].iloc[0],"")}" '
+                        f'width="16" style="vertical-align:middle;margin-right:4px;"> {t}'
                         for t in grp["Token"]
                     )
+
+                    # token_col = " + ".join(
+                    #     f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
+                    #     f'style="vertical-align:middle;margin-right:4px;"> {t}'
+                    #     for t in grp["Token"]
+                    # )
 
                     bal_col = " + ".join(
                         f'{bal:,.4f} {tok}' for tok, bal in
