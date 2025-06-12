@@ -6,17 +6,6 @@ from google.oauth2.service_account import Credentials
 st.set_page_config(page_title="DeFi Treasury Tracker", layout="wide")
 st.title("📊 DeFi Treasury Tracker")
 
-# # ───────────── sanity-check: does Plotly render? ─────────────
-# if st.sidebar.checkbox("Run test-chart"):
-#     test_fig = px.pie(
-#         names=["A", "B", "C"],
-#         values=[100, 200, 300],
-#         hole=.4,
-#         title="🔬 Plotly sanity-check (should show 100 / 200 / 300)",
-#     )
-#     st.plotly_chart(test_fig, use_container_width=True)
-#     st.stop() 
-
 ACCESS_KEY = st.secrets["ACCESS_KEY"]
 SHEET_ID   = st.secrets["sheet_id"]
 SA_INFO    = json.loads(st.secrets["gcp_service_account"])
