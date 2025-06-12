@@ -183,7 +183,7 @@ if not chain_sum.empty:
         color_discrete_sequence=[COLOR_JSON.get(c, "#ccc") for c in chain_df["chain"]]
     )
     fig_chain.update_traces(
-        texttemplate="%{label}<br>%{percent}<br>$%{customdata}",
+        texttemplate="%{label}<br>%{percent}<br>%{customdata}",
         customdata=[fmt_usd(v) for v in chain_df["usd"]],
         hovertemplate="chain = %{label}<br>value = %{customdata}<extra></extra>"
     )
@@ -208,7 +208,7 @@ if not df_protocols.empty or not df_wallets.empty:
         color_discrete_sequence=[COLOR_JSON.get(p, "#ccc") for p in proto_df["protocol"]]
     )
     fig_proto.update_traces(
-        texttemplate="%{label}<br>%{percent}<br>$%{customdata}",
+        texttemplate="%{label}<br>%{percent}<br>%{customdata}",
         customdata=[fmt_usd(v) for v in proto_df["usd"]],
         hovertemplate="protocol = %{label}<br>value = %{customdata}<extra></extra>"
     )
