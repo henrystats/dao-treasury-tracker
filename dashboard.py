@@ -16,7 +16,7 @@ headers     = {"AccessKey": ACCESS_KEY}
 
 TOKEN_LOGOS = {
     "ETH":"https://static.debank.com/image/coin/logo_url/eth/6443cdccced33e204d90cb723c632917.png",
-    "WETH":"https://static.debank.com/image/eth_token/logo_url/0xc02aaa39b223fe.../61844453e63cf81301f845d7864236f6.png",
+    "WETH":"https://static.debank.com/image/eth_token/logo_url/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2/61844453e63cf81301f845d7864236f6.png",
 }
 PROTOCOL_LOGOS = {
     "Curve":"https://static.debank.com/image/project/logo_url/curve/aa991be165e771cff87ae61e2a61ef68.png",
@@ -28,9 +28,9 @@ COLOR_JSON = {
 }
 BLOCKCHAIN_LOGOS = {
     "Ethereum": "https://static.debank.com/image/coin/logo_url/eth/6443cdccced33e204d90cb723c632917.png",
-    "Arbitrum": "https://static.debank.com/image/project/logo_url/arbitrum/fe4aa81509852ffb62ddb29e671c9c8a.png",
+    "Arbitrum": "https://static.debank.com/image/arb_token/logo_url/0x912ce59144191c1204e64559fe8253a0e49e6548/7623afc27299327fdb0b090fd67e8ff4.png",
     "Base":      "https://static.debank.com/image/project/logo_url/base/ba1672b3537195839d1eed6f60c89bdc.png",
-    "Scroll":    "https://static.debank.com/image/project/logo_url/scroll/5adf9813ba74793e611b1bf3e0a18dd6.png",
+    "Scroll":    "https://static.debank.com/image/scrl_token/logo_url/0xd29687c813d741e2f938f4ac377128810e217b1b/0eabb4976c99ba1e66fdb9b3e5139dcf.png",
 }
 
 # ──────── CSS for fixed-width tables ────────
@@ -391,10 +391,15 @@ if not df_protocols.empty:
 
                 part.rename(columns={"Blockchain": "Chain"}, inplace=True)
                 part["Wallet"] = part["Wallet"].apply(link_wallet)
-                part["Token"] = part["Token"].apply(
-                    lambda t: f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
-                              f'style="vertical-align:middle;margin-right:4px;"> {t}'
+                part["Token"] = part.apply(
+                    lambda r: f'<img src="{TOKEN_LOGOS.get(r.Token) or BLOCKCHAIN_LOGOS.get(r.Chain,"")}" '
+                              f'width="16" style="vertical-align:middle;margin-right:4px;"> {r.Token}',
+                    axis=1
                 )
+                # part["Token"] = part["Token"].apply(
+                #     lambda t: f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
+                #               f'style="vertical-align:middle;margin-right:4px;"> {t}'
+                # )
                 part["Token Balance"] = part["Token Balance"].apply(lambda x: f"{x:,.4f}")
                 part["USD Value"]      = part["USD Value"].apply(fmt_usd)
 
