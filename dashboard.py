@@ -36,10 +36,10 @@ table {table-layout:fixed;width:100%}
 th,td {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* new column widths – order: Wallet | Chain | Token | Token Balance | USD Value */
-th:nth-child(1), td:nth-child(1) {width:15%}   /* Wallet  */
-th:nth-child(2), td:nth-child(2) {width:15%}   /* Chain   */
-th:nth-child(3), td:nth-child(3) {width:40%}   /* Token   */
-th:nth-child(4), td:nth-child(4) {width:20%}   /* Token Balance */
+th:nth-child(1), td:nth-child(1) {width:12%}   /* Wallet  */
+th:nth-child(2), td:nth-child(2) {width:12%}   /* Chain   */
+th:nth-child(3), td:nth-child(3) {width:36%}   /* Token   */
+th:nth-child(4), td:nth-child(4) {width:30%}   /* Token Balance */
 th:nth-child(5), td:nth-child(5) {width:10%}   /* USD Value */
 
 </style>""", unsafe_allow_html=True)
@@ -293,6 +293,7 @@ st.markdown("---")   # separator before protocol section
 st.subheader("🏦 DeFi Protocol Positions")
 if not df_protocols.empty:
     dfp=df_protocols.copy()
+    dfp["usd_num"] = dfp["USD Value"]
     dfp_raw = df_protocols.copy()
     dfp["USD Value"]=dfp["USD Value"].apply(fmt_usd)
     dfp["Token Balance"]=dfp["Token Balance"].apply(lambda x:f"{x:,.4f}")
@@ -321,6 +322,14 @@ if not df_protocols.empty:
 
                 agg_rows = []
                 for pid, grp in raw_lp.groupby("Pool"):
+                       # ── collapse duplicate tokens (e.g. supply + reward) first ──
+                    grp = (
+                        grp.groupby("Token", as_index=False)
+                           .agg({"USD Value":"sum",
+                                 "Token Balance":"sum",
+                                 "Wallet":"first",
+                                 "Chain":"first"})
+                    )
                     usd_total = grp["USD Value"].sum()
 
                     token_col = " + ".join(
