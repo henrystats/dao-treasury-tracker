@@ -362,12 +362,18 @@ if not df_protocols.empty:
 
             # ── all other classifications ──
             else:
-                part = sub[sub["Classification"] == cls].copy().sort_values("USD Value", ascending=False)
-                part = part.rename(columns={"Blockchain": "Chain"})
+                part = dfp_raw[
+                    (dfp_raw["Protocol"] == proto) &
+                    (dfp_raw["Classification"] == cls)
+                ].copy().sort_values("USD Value", ascending=False)
+
+                part.rename(columns={"Blockchain": "Chain"}, inplace=True)
                 part["Token"] = part["Token"].apply(
                     lambda t: f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
                               f'style="vertical-align:middle;margin-right:4px;"> {t}'
                 )
+                part["Token Balance"] = part["Token Balance"].apply(lambda x: f"{x:,.4f}")
+                part["USD Value"]      = part["USD Value"].apply(fmt_usd)
 
             st.markdown(
                 md_table(
