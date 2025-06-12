@@ -379,6 +379,7 @@ if not df_protocols.empty:
                 ].copy().sort_values("USD Value", ascending=False)
 
                 part.rename(columns={"Blockchain": "Chain"}, inplace=True)
+                part["Wallet"] = part["Wallet"].apply(link_wallet)
                 part["Token"] = part["Token"].apply(
                     lambda t: f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
                               f'style="vertical-align:middle;margin-right:4px;"> {t}'
