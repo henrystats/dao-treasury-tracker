@@ -298,9 +298,12 @@ if not df_protocols.empty:
     dfp["Token Balance"]=dfp["Token Balance"].apply(lambda x:f"{x:,.4f}")
     dfp["Wallet"]=dfp["Wallet"].apply(link_wallet)
 
-    order=dfp.groupby("Protocol")["USD Value"].apply(lambda vs:
-        sum(float(v.strip("$MK"))*(1e6 if v.endswith("M") else 1e3 if v.endswith("K") else 1) for v in vs)
-    ).sort_values(ascending=False)
+    order = (
+        dfp_raw                                  # <- raw (numeric) frame
+        .groupby("Protocol")["USD Value"]
+        .sum()
+        .sort_values(ascending=False)
+    )
 
     for proto in order.index:
         st.markdown(
