@@ -160,12 +160,9 @@ cA,cB,cC,cD = st.columns(4)
 cA.metric("📦 Total Value",  fmt_usd(tot_val))
 cB.metric("🏦 DeFi Protocols",  fmt_usd(tot_defi))
 cC.metric("💰 Wallet Balances", fmt_usd(tot_wal))
-cD.metric(
-    "⏱️ Updated",
-    (lambda s: "just now" if s < 60 else f"{int(s//60)} min ago" if s < 3600 else f"{int(s//3600)} hr ago")(
-        (datetime.datetime.utcnow() - ensure_utc(pd.Timestamp.utcnow()).to_pydatetime()).total_seconds()
-    )
-)
+elapsed = (datetime.datetime.utcnow() - ensure_utc(pd.Timestamp.utcnow()).to_pydatetime()).total_seconds()
+readable = "just now" if elapsed < 60 else f"{int(elapsed//60)} min ago" if elapsed < 3600 else f"{int(elapsed//3600)} hr ago"
+cD.metric("⏱️ Updated", readable)
 
 # ───────────── breakdown pies ─────────────
 st.markdown("## 🔍 DAO Treasury Breakdown")
