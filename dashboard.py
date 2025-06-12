@@ -321,28 +321,41 @@ if not df_protocols.empty:
                     (dfp_raw["Protocol"] == proto) &
                     (dfp_raw["Classification"] == cls)
                 ].copy()
+                raw_lp.rename(columns={"Blockchain": "Chain"}, inplace=True)
 
                 agg_rows = []
                 for pid, grp in raw_lp.groupby("Pool"):
-                    usd_total = grp["USD Value"].sum()
+
+                    # --- collapse duplicate token rows (supply + reward) ---
+                    grp = (
+                        grp.groupby("Token", as_index=False)
+                           .agg({
+                                "USD Value":     "sum",
+                                "Token Balance": "sum",
+                                "Wallet":        "first",
+                                "Chain":         "first",
+                           })
+                    )
 
                     token_col = " + ".join(
-                        f'<img src="{TOKEN_LOGOS.get(t, "")}" '
-                        f'width="16" style="vertical-align:middle;margin-right:4px;"> {t}'
+                        f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
+                        f'style="vertical-align:middle;margin-right:4px;"> {t}'
                         for t in grp["Token"]
                     )
 
                     bal_col = " + ".join(
-                        f'{b:,.4f} {t}' for t, b in zip(grp["Token"], grp["Token Balance"])
+                        f'{bal:,.4f} {tok}' for tok, bal in
+                        zip(grp["Token"], grp["Token Balance"])
                     )
 
                     agg_rows.append({
-                        "Wallet":  link_wallet(grp["Wallet"].iloc[0]),
-                        "Chain":   grp["Blockchain"].iloc[0],
-                        "Token":   token_col,
+                        "Wallet":        link_wallet(grp["Wallet"].iloc[0]),
+                        "Chain":         grp["Chain"].iloc[0],
+                        "Token":         token_col,
                         "Token Balance": bal_col,
-                        "USD Value": usd_total
+                        "USD Value":     grp["USD Value"].sum(),
                     })
+
 
                 part = pd.DataFrame(agg_rows).sort_values("USD Value", ascending=False)
                 part["USD Value"] = part["USD Value"].apply(fmt_usd)
