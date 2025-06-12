@@ -322,13 +322,15 @@ if not df_protocols.empty:
 
                 agg_rows = []
                 for pid, grp in raw_lp.groupby("Pool"):
-                       # ── collapse duplicate tokens (e.g. supply + reward) first ──
+                    # ── collapse duplicate tokens (e.g. supply + reward) first ──
                     grp = (
                         grp.groupby("Token", as_index=False)
-                           .agg({"USD Value":"sum",
-                                 "Token Balance":"sum",
-                                 "Wallet":"first",
-                                 "Chain":"first"})
+                           .agg({
+                               "USD Value": "sum",
+                               "Token Balance": "sum",
+                               "Wallet": "first",
+                               "Chain": "first"
+                           })
                     )
                     usd_total = grp["USD Value"].sum()
 
