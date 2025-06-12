@@ -164,42 +164,56 @@ cD.metric("⏱️ Updated", last_ts)
 
 # ───────────── breakdown pies ─────────────
 st.markdown("## 🔍 DAO Treasury Breakdown")
-pie1_col,pie2_col=st.columns(2)
+pie1_col, pie2_col = st.columns(2)
 
-# ----- chain pie -----
-chain_sum=(df_wallets.groupby("Chain")["USD Value"].sum()
-          +df_protocols.groupby("Blockchain")["USD Value"].sum()).astype(float)\
-          .sort_values(ascending=False)
+# ---------- chain pie ----------
+chain_sum = (
+    df_wallets.groupby("Chain")["USD Value"].sum()
+    + df_protocols.groupby("Blockchain")["USD Value"].sum()
+).astype(float).sort_values(ascending=False)
+
 if not chain_sum.empty:
-    chain_df=chain_sum.reset_index().rename(columns={'index':'chain',0:'usd'})
-    fig_chain=px.pie(chain_df,names="chain",values="usd",hole=.4,
-                     color_discrete_sequence=[COLOR_JSON.get(c,"#ccc") for c in chain_df["chain"]])
+    chain_df = chain_sum.reset_index()
+    chain_df.columns = ["chain", "usd"]          # ← robust rename
+    fig_chain = px.pie(
+        chain_df,
+        names="chain",
+        values="usd",
+        hole=.4,
+        color_discrete_sequence=[COLOR_JSON.get(c, "#ccc") for c in chain_df["chain"]]
+    )
     fig_chain.update_traces(
         texttemplate="%{label}<br>%{percent}<br>$%{customdata}",
         customdata=[fmt_usd(v) for v in chain_df["usd"]],
         hovertemplate="chain = %{label}<br>value = %{customdata}<extra></extra>"
     )
     fig_chain.update_layout(title_text="By Chain")
-    pie1_col.plotly_chart(fig_chain,use_container_width=True)
+    pie1_col.plotly_chart(fig_chain, use_container_width=True)
 
-# ----- protocol pie -----
+# ---------- protocol pie ----------
 if not df_protocols.empty or not df_wallets.empty:
-    proto_sum=df_protocols.groupby("Protocol")["USD Value"].sum()
-    proto_sum.loc["Wallet Balances"]=df_wallets["USD Value"].sum()
-    proto_sum=proto_sum.astype(float).sort_values(ascending=False)
-    top5=proto_sum.head(5)
-    if proto_sum.size>5:
-        top5.loc["Others"]=proto_sum.iloc[5:].sum()
-    proto_df=top5.reset_index().rename(columns={'index':'protocol',0:'usd'})
-    fig_proto=px.pie(proto_df,names="protocol",values="usd",hole=.4,
-                     color_discrete_sequence=[COLOR_JSON.get(p,"#ccc") for p in proto_df["protocol"]])
+    proto_sum = df_protocols.groupby("Protocol")["USD Value"].sum()
+    proto_sum.loc["Wallet Balances"] = df_wallets["USD Value"].sum()
+    proto_sum = proto_sum.astype(float).sort_values(ascending=False)
+    top5 = proto_sum.head(5)
+    if proto_sum.size > 5:
+        top5.loc["Others"] = proto_sum.iloc[5:].sum()
+    proto_df = top5.reset_index()
+    proto_df.columns = ["protocol", "usd"]       # ← robust rename
+    fig_proto = px.pie(
+        proto_df,
+        names="protocol",
+        values="usd",
+        hole=.4,
+        color_discrete_sequence=[COLOR_JSON.get(p, "#ccc") for p in proto_df["protocol"]]
+    )
     fig_proto.update_traces(
         texttemplate="%{label}<br>%{percent}<br>$%{customdata}",
         customdata=[fmt_usd(v) for v in proto_df["usd"]],
         hovertemplate="protocol = %{label}<br>value = %{customdata}<extra></extra>"
     )
     fig_proto.update_layout(title_text="By DeFi Protocols")
-    pie2_col.plotly_chart(fig_proto,use_container_width=True)
+    pie2_col.plotly_chart(fig_proto, use_container_width=True)
 
 st.markdown("---")
 
