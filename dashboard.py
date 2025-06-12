@@ -292,62 +292,58 @@ st.markdown("---")   # separator before protocol section
 # ───────────── protocol positions table ─────────────
 st.subheader("🏦 DeFi Protocol Positions")
 if not df_protocols.empty:
-    dfp=df_protocols.copy()
-    dfp["usd_num"] = dfp["USD Value"]
-    dfp_raw = df_protocols.copy()
-    dfp["USD Value"]=dfp["USD Value"].apply(fmt_usd)
-    dfp["Token Balance"]=dfp["Token Balance"].apply(lambda x:f"{x:,.4f}")
-    dfp["Wallet"]=dfp["Wallet"].apply(link_wallet)
+    dfp_raw = df_protocols.copy()                 # keep numeric copy
+    dfp      = df_protocols.copy()
+    dfp["USD Value"]     = dfp["USD Value"].apply(fmt_usd)
+    dfp["Token Balance"] = dfp["Token Balance"].apply(lambda x:f"{x:,.4f}")
+    dfp["Wallet"]        = dfp["Wallet"].apply(link_wallet)
 
-    order=dfp.groupby("Protocol")["USD Value"].apply(lambda vs:
-        sum(float(v.strip("$MK"))*(1e6 if v.endswith("M") else 1e3 if v.endswith("K") else 1) for v in vs)
-    ).sort_values(ascending=False)
+    order = (
+        dfp_raw.groupby("Protocol")["USD Value"].sum()
+        .sort_values(ascending=False)
+    )
 
     for proto in order.index:
         st.markdown(
-            f'<h3><img src="{PROTOCOL_LOGOS.get(proto,"")}" width="24" style="vertical-align:middle;margin-right:6px;">'
+            f'<h3><img src="{PROTOCOL_LOGOS.get(proto,"")}" width="24" '
+            f'style="vertical-align:middle;margin-right:6px;">'
             f'{proto} ({fmt_usd(order[proto])})</h3>', unsafe_allow_html=True)
 
-        sub = dfp[dfp["Protocol"] == proto].copy()
+        sub      = dfp[dfp["Protocol"] == proto].copy()
+        sub_raw  = dfp_raw[dfp_raw["Protocol"] == proto].copy()
 
         for cls in sub["Classification"].dropna().unique():
             st.markdown(f"<h4 style='margin:6px 0 2px'>{cls}</h4>", unsafe_allow_html=True)
 
             # ── special handling for Liquidity Pool rows ──
             if cls == "Liquidity Pool" and proto not in ("Pendle", "Pendle V2"):
-                raw_lp = dfp_raw[
-                    (dfp_raw["Protocol"] == proto) &
-                    (dfp_raw["Classification"] == cls)
-                ].copy()
-                raw_lp.rename(columns={"Blockchain": "Chain"}, inplace=True)
+                raw_lp = sub_raw[sub_raw["Classification"] == cls].copy()
+                raw_lp.rename(columns={"Blockchain":"Chain"}, inplace=True)
 
-                agg_rows = []
+                agg_rows=[]
                 for pid, grp in raw_lp.groupby("Pool"):
-                    # ── collapse duplicate tokens (e.g. supply + reward) first ──
+                    # collapse supply+reward duplicates
                     grp = (
                         grp.groupby("Token", as_index=False)
-                           .agg({
-                               "USD Value": "sum",
-                               "Token Balance": "sum",
-                               "Wallet": "first",
-                               "Chain": "first"
-                           })
+                           .agg({"USD Value":"sum",
+                                 "Token Balance":"sum",
+                                 "Wallet":"first",
+                                 "Chain":"first"})
                     )
                     usd_total = grp["USD Value"].sum()
 
                     token_col = " + ".join(
-                        f'<img src="{TOKEN_LOGOS.get(t, "")}" '
-                        f'width="16" style="vertical-align:middle;margin-right:4px;"> {t}'
-                        for t in grp["Token"]
+                        f'<img src="{TOKEN_LOGOS.get(tok,"")}" width="16" '
+                        f'style="vertical-align:middle;margin-right:4px;"> {tok}'
+                        for tok in grp["Token"]
                     )
-
-                    bal_col = " + ".join(
-                        f'{b:,.4f} {t}' for t, b in zip(grp["Token"], grp["Token Balance"])
+                    bal_col   = " + ".join(
+                        f'{bal:,.4f} {tok}' for tok, bal in zip(grp["Token"], grp["Token Balance"])
                     )
 
                     agg_rows.append({
                         "Wallet":  link_wallet(grp["Wallet"].iloc[0]),
-                        "Chain":   grp["Blockchain"].iloc[0],
+                        "Chain":   grp["Chain"].iloc[0],    # ← fixed reference
                         "Token":   token_col,
                         "Token Balance": bal_col,
                         "USD Value": usd_total
@@ -356,24 +352,20 @@ if not df_protocols.empty:
                 part = pd.DataFrame(agg_rows).sort_values("USD Value", ascending=False)
                 part["USD Value"] = part["USD Value"].apply(fmt_usd)
 
-            # ── all other classifications ──
+            # ── other classifications ──
             else:
                 part = sub[sub["Classification"] == cls].copy().sort_values("USD Value", ascending=False)
-                part = part.rename(columns={"Blockchain": "Chain"})
                 part["Token"] = part["Token"].apply(
-                    lambda t: f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
-                              f'style="vertical-align:middle;margin-right:4px;"> {t}'
-                )
+                    lambda tok: f'<img src="{TOKEN_LOGOS.get(tok,"")}" width="16" '
+                                f'style="vertical-align:middle;margin-right:4px;"> {tok}')
 
             st.markdown(
                 md_table(
-                    part[["Wallet", "Chain", "Token", "Token Balance", "USD Value"]],
-                    ["Wallet", "Chain", "Token", "Token Balance", "USD Value"],
-                ),
+                    part[["Wallet","Chain","Token","Token Balance","USD Value"]],
+                    ["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True
             )
 
         st.markdown("<hr style='margin:1.5em 0'>", unsafe_allow_html=True)
-
 else:
     st.info("No DeFi protocol positions found.")
