@@ -297,7 +297,7 @@ if not df_protocols.empty:
 
         sub=dfp[dfp["Protocol"]==proto].copy()
         for cls in sub["Classification"].dropna().unique():
-            st.markdown(f"### {cls}")
+            st.markdown(f"<h4 style='margin:6px 0 2px'>{cls}</h4>", unsafe_allow_html=True)
             part=sub[sub["Classification"]==cls].copy().sort_values("USD Value",ascending=False)
             part=part.rename(columns={"Blockchain":"Chain"})
             part["Token"]=part["Token"].apply(
@@ -306,5 +306,6 @@ if not df_protocols.empty:
                 part[["Wallet","Chain","Token","Token Balance","USD Value"]],
                 ["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
+        st.markdown("<hr style='margin:1.5em 0'>", unsafe_allow_html=True)
 else:
     st.info("No DeFi protocol positions found.")
