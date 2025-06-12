@@ -319,6 +319,7 @@ if not df_protocols.empty:
                     (dfp_raw["Protocol"] == proto) &
                     (dfp_raw["Classification"] == cls)
                 ].copy()
+                raw_lp.rename(columns={"Blockchain": "Chain"}, inplace=True)
 
                 agg_rows = []
                 for pid, grp in raw_lp.groupby("Pool"):
