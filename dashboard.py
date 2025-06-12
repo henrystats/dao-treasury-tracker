@@ -126,6 +126,7 @@ for w in sel_wallets:
                 sym=desc if desc else first_symbol(t)
                 prot_rows.append({"Protocol":p.get("name"),"Classification":it.get("name",""),
                                   "Blockchain":CHAIN_NAMES.get(p.get("chain"),p.get("chain")),
+                                  "Pool": it.get("pool", {}).get("id", ""),
                                   "Wallet":w,"Token":sym,
                                   "Token Balance":amt,"USD Value":amt*price})
 df_protocols=pd.DataFrame(prot_rows)
@@ -292,6 +293,7 @@ st.markdown("---")   # separator before protocol section
 st.subheader("🏦 DeFi Protocol Positions")
 if not df_protocols.empty:
     dfp=df_protocols.copy()
+    dfp_raw = df_protocols.copy()
     dfp["USD Value"]=dfp["USD Value"].apply(fmt_usd)
     dfp["Token Balance"]=dfp["Token Balance"].apply(lambda x:f"{x:,.4f}")
     dfp["Wallet"]=dfp["Wallet"].apply(link_wallet)
@@ -305,17 +307,61 @@ if not df_protocols.empty:
             f'<h3><img src="{PROTOCOL_LOGOS.get(proto,"")}" width="24" style="vertical-align:middle;margin-right:6px;">'
             f'{proto} ({fmt_usd(order[proto])})</h3>', unsafe_allow_html=True)
 
-        sub=dfp[dfp["Protocol"]==proto].copy()
+        sub = dfp[dfp["Protocol"] == proto].copy()
+
         for cls in sub["Classification"].dropna().unique():
             st.markdown(f"<h4 style='margin:6px 0 2px'>{cls}</h4>", unsafe_allow_html=True)
-            part=sub[sub["Classification"]==cls].copy().sort_values("USD Value",ascending=False)
-            part=part.rename(columns={"Blockchain":"Chain"})
-            part["Token"]=part["Token"].apply(
-                lambda t:f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
-            st.markdown(md_table(
-                part[["Wallet","Chain","Token","Token Balance","USD Value"]],
-                ["Wallet","Chain","Token","Token Balance","USD Value"]),
-                unsafe_allow_html=True)
+
+            # ── special handling for Liquidity Pool rows ──
+            if cls == "Liquidity Pool":
+                raw_lp = dfp_raw[
+                    (dfp_raw["Protocol"] == proto) &
+                    (dfp_raw["Classification"] == cls)
+                ].copy()
+
+                agg_rows = []
+                for pid, grp in raw_lp.groupby("Pool"):
+                    usd_total = grp["USD Value"].sum()
+
+                    token_col = " + ".join(
+                        f'<img src="{TOKEN_LOGOS.get(t, "")}" '
+                        f'width="16" style="vertical-align:middle;margin-right:4px;"> {t}'
+                        for t in grp["Token"]
+                    )
+
+                    bal_col = " + ".join(
+                        f'{b:,.4f} {t}' for t, b in zip(grp["Token"], grp["Token Balance"])
+                    )
+
+                    agg_rows.append({
+                        "Wallet":  grp["Wallet"].iloc[0],
+                        "Chain":   grp["Blockchain"].iloc[0],
+                        "Token":   token_col,
+                        "Token Balance": bal_col,
+                        "USD Value": usd_total
+                    })
+
+                part = pd.DataFrame(agg_rows).sort_values("USD Value", ascending=False)
+                part["USD Value"] = part["USD Value"].apply(fmt_usd)
+
+            # ── all other classifications ──
+            else:
+                part = sub[sub["Classification"] == cls].copy().sort_values("USD Value", ascending=False)
+                part = part.rename(columns={"Blockchain": "Chain"})
+                part["Token"] = part["Token"].apply(
+                    lambda t: f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
+                              f'style="vertical-align:middle;margin-right:4px;"> {t}'
+                )
+
+            st.markdown(
+                md_table(
+                    part[["Wallet", "Chain", "Token", "Token Balance", "USD Value"]],
+                    ["Wallet", "Chain", "Token", "Token Balance", "USD Value"],
+                ),
+                unsafe_allow_html=True
+            )
+
         st.markdown("<hr style='margin:1.5em 0'>", unsafe_allow_html=True)
+
 else:
     st.info("No DeFi protocol positions found.")
