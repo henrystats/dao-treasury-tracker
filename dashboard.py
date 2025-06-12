@@ -104,6 +104,7 @@ for w in sel_wallets:
 df_wallets=pd.DataFrame(wallet_rows)
 df_wallets=df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
 df_wallets["USD Value"]=pd.to_numeric(df_wallets["USD Value"],errors="coerce")
+df_wallets=df_wallets[df_wallets["USD Value"]>=1]   # ≥ $1 only
 
 prot_rows=[]
 for w in sel_wallets:
@@ -123,6 +124,7 @@ for w in sel_wallets:
 df_protocols=pd.DataFrame(prot_rows)
 df_protocols=df_protocols[df_protocols["Blockchain"].isin(sel_chains)].copy()
 df_protocols["USD Value"]=pd.to_numeric(df_protocols["USD Value"],errors="coerce")
+df_protocols=df_protocols[df_protocols["USD Value"]>=1]   # ≥ $1 only
 
 # ───────────── snapshot (unchanged logic) ─────────────
 def write_snapshot():
@@ -152,14 +154,16 @@ def _hourly(): write_snapshot(); return True
 _hourly()
 
 # ───────────── counters ─────────────
+last_updated = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 tot_val  = df_wallets["USD Value"].sum()+df_protocols["USD Value"].sum()
 tot_defi = df_protocols["USD Value"].sum()
 tot_wal  = df_wallets["USD Value"].sum()
 
-cA,cB,cC = st.columns(3)
-cA.metric("📦 Total Value",  fmt_usd(tot_val))
-cB.metric("DeFi Protocols",  fmt_usd(tot_defi))
-cC.metric("Wallet Balances", fmt_usd(tot_wal))
+cA,cB,cC,cD = st.columns(4)
+cA.metric("📦 Total Value",        fmt_usd(tot_val))
+cB.metric("🏦 DeFi Protocols",     fmt_usd(tot_defi))
+cC.metric("👛 Wallet Balances",    fmt_usd(tot_wal))
+cD.metric("⏰ Last Update",         last_updated)
 
 # ───────────── breakdown pies ─────────────
 st.markdown("## 🔍 DAO Treasury Breakdown")
@@ -170,13 +174,13 @@ chain_sum=(df_wallets.groupby("Chain")["USD Value"].sum()
           +df_protocols.groupby("Blockchain")["USD Value"].sum()).astype(float)\
           .sort_values(ascending=False)
 if not chain_sum.empty:
-    chain_df=chain_sum.reset_index()
-    chain_df.columns=["chain","usd"]
+    chain_df=chain_sum.reset_index(names=["chain","usd"])   #  ← pandas ≤1.5 safe
     fig_chain=px.pie(chain_df,names="chain",values="usd",hole=.4,
                      color_discrete_sequence=[COLOR_JSON.get(c,"#ccc") for c in chain_df["chain"]])
-    fig_chain.update_traces(texttemplate="%{label}<br>%{percent}<br>$%{customdata}",
-                            customdata=[fmt_usd(v) for v in chain_df["usd"]],
-                            hovertemplate="chain = %{label}<br>value = %{customdata}<extra></extra>")
+    fig_chain.update_traces(
+        texttemplate="%{label}<br>%{percent}<br>%{customdata}",
+        customdata=[fmt_usd(v) for v in chain_df["usd"]],
+        hovertemplate="chain = %{label}<br>value = %{customdata}<extra></extra>")
     fig_chain.update_layout(title_text="By Chain")
     pie1_col.plotly_chart(fig_chain,use_container_width=True)
 
@@ -188,13 +192,13 @@ if not df_protocols.empty or not df_wallets.empty:
     top5=proto_sum.head(5)
     if proto_sum.size>5:
         top5.loc["Others"]=proto_sum.iloc[5:].sum()
-    proto_df=top5.reset_index()
-    proto_df.columns=["protocol","usd"]
+    proto_df=top5.reset_index(names=["protocol","usd"])
     fig_proto=px.pie(proto_df,names="protocol",values="usd",hole=.4,
                      color_discrete_sequence=[COLOR_JSON.get(p,"#ccc") for p in proto_df["protocol"]])
-    fig_proto.update_traces(texttemplate="%{label}<br>%{percent}<br>$%{customdata}",
-                            customdata=[fmt_usd(v) for v in proto_df["usd"]],
-                            hovertemplate="protocol = %{label}<br>value = %{customdata}<extra></extra>")
+    fig_proto.update_traces(
+        texttemplate="%{label}<br>%{percent}<br>%{customdata}",
+        customdata=[fmt_usd(v) for v in proto_df["usd"]],
+        hovertemplate="protocol = %{label}<br>value = %{customdata}<extra></extra>")
     fig_proto.update_layout(title_text="By DeFi Protocols")
     pie2_col.plotly_chart(fig_proto,use_container_width=True)
 
@@ -211,14 +215,13 @@ def load_history():
     except: return pd.DataFrame(columns=["timestamp","history_type","name","usd_value"])
 
 hist=load_history()
-week=hist[hist["timestamp"]>=ensure_utc(pd.Timestamp.utcnow())-pd.Timedelta(days=7)]
 
-st.markdown("### 📈 History – last 7 days")
+st.markdown("### 📈 Historical Data")
 area1,area2=st.columns(2)
 
-if not week.empty:
+if not hist.empty:
     # protocol area
-    p=week[week["history_type"]=="protocol"].copy()
+    p=hist[hist["history_type"]=="protocol"].copy()
     if not p.empty:
         p["usd_value"]=pd.to_numeric(p["usd_value"],errors="coerce").fillna(0)
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
@@ -229,7 +232,7 @@ if not week.empty:
         area1.plotly_chart(fig_p,use_container_width=True)
 
     # token area
-    t=week[week["history_type"]=="token"].copy()
+    t=hist[hist["history_type"]=="token"].copy()
     if not t.empty:
         t["usd_value"]=pd.to_numeric(t["usd_value"],errors="coerce").fillna(0)
         cats=["ETH","Stables","Others"]
@@ -241,7 +244,7 @@ if not week.empty:
 
 st.markdown("---")
 
-# ───────────── wallet table ─────────────
+# ───────────── wallet balances table ─────────────
 st.subheader("💰 Wallet Balances")
 if not df_wallets.empty:
     df=df_wallets.sort_values("USD Value",ascending=False).copy()
@@ -283,5 +286,6 @@ if not df_protocols.empty:
                 part[["Wallet","Chain","Token","Token Balance","USD Value"]],
                 ["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
+        st.markdown("---")   #  line-break between individual protocols
 else:
     st.info("No DeFi protocol positions found.")
