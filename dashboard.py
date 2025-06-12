@@ -123,7 +123,7 @@ for w in sel_wallets:
             for t in toks:
                 price,amt=t.get("price",0),t.get("amount",0)
                 if price<=0: continue
-                sym=desc if desc else first_symbol(t)
+                sym = desc if desc and not desc.startswith("#") else first_symbol(t)
                 prot_rows.append({"Protocol":p.get("name"),"Classification":it.get("name",""),
                                   "Blockchain":CHAIN_NAMES.get(p.get("chain"),p.get("chain")),
                                   "Pool": it.get("pool", {}).get("id", ""),
@@ -313,7 +313,7 @@ if not df_protocols.empty:
             st.markdown(f"<h4 style='margin:6px 0 2px'>{cls}</h4>", unsafe_allow_html=True)
 
             # ── special handling for Liquidity Pool rows ──
-            if cls == "Liquidity Pool":
+            if cls == "Liquidity Pool" and proto not in ("Pendle", "Pendle V2"):
                 raw_lp = dfp_raw[
                     (dfp_raw["Protocol"] == proto) &
                     (dfp_raw["Classification"] == cls)
@@ -334,7 +334,7 @@ if not df_protocols.empty:
                     )
 
                     agg_rows.append({
-                        "Wallet":  grp["Wallet"].iloc[0],
+                        "Wallet":  link_wallet(grp["Wallet"].iloc[0]),
                         "Chain":   grp["Blockchain"].iloc[0],
                         "Token":   token_col,
                         "Token Balance": bal_col,
