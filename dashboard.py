@@ -106,7 +106,8 @@ def fetch_protocols(wallet):
     return r.json() if r.status_code==200 else []
 
 # ───────────── sidebar ─────────────
-sel_wallets = st.sidebar.multiselect("Wallets", WALLETS, default=WALLETS)
+# sel_wallets = st.sidebar.multiselect("Wallets", WALLETS, default=WALLETS)
+sel_wallets = WALLETS
 sel_chains  = st.sidebar.multiselect("Chains",  list(CHAIN_NAMES.values()), default=list(CHAIN_NAMES.values()))
 
 # ───────────── build dfs ─────────────
@@ -280,9 +281,32 @@ if not hist.empty:
 st.markdown("---")
 
 # ───────────── wallet table ─────────────
+# ─── wallet-table filters (only affect the table below) ───
+filter_wallets = st.multiselect(
+    "👛 Wallet filter",
+    WALLETS,
+    default=WALLETS,
+    key="wal_filter"
+)
+
+filter_tokens = st.multiselect(
+    "🪙 Token filter",
+    sorted(df_wallets["Token"].unique()),
+    default=sorted(df_wallets["Token"].unique()),
+    key="tok_filter"
+)
+
+# dataframe view after applying the two filters
+df_wallets_view = df_wallets[
+    df_wallets["Wallet"].isin(filter_wallets) &
+    df_wallets["Token"].isin(filter_tokens)
+].copy()
+
 st.subheader("💰 Wallet Balances")
-if not df_wallets.empty:
-    df=df_wallets.sort_values("USD Value",ascending=False).copy()
+# if not df_wallets.empty:
+#     df=df_wallets.sort_values("USD Value",ascending=False).copy()
+if not df_wallets_view.empty:
+    df = df_wallets_view.sort_values("USD Value", ascending=False).copy()
     df["USD Value"]=df["USD Value"].apply(fmt_usd)
     df["Token Balance"]=df["Token Balance"].apply(lambda x:f"{x:,.4f}")
     df["Wallet"]=df["Wallet"].apply(link_wallet)
@@ -295,8 +319,10 @@ if not df_wallets.empty:
     #     lambda t:f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
     st.markdown(md_table(df,["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
+# else:
+#     st.info("No wallet balances found.")
 else:
-    st.info("No wallet balances found.")
+    st.info("No wallet balances match the current filters.")
 
 st.markdown("---")   # separator before protocol section
 
