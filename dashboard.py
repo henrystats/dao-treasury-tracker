@@ -359,20 +359,7 @@ with col_d:
         help="Pick a past date to load the latest snapshot for that day. Today = live data."
     )
 
-# wallet_input = st.text_input(
-#     "👛 Wallet filter",
-#     key="wal_filter",
-#     placeholder="All Wallets",
-#     help="Addresses are separated by commas, e.g. 0x345…5775, 0x4646…5656"
-# )
 filter_wallets = [w.strip().lower() for w in wallet_input.split(",") if w.strip()]
-
-# token_input = st.text_input(
-#     "🪙 Token filter",
-#     key="tok_filter",
-#     placeholder="All Tokens",
-#     help="Token symbols are separated by commas, e.g. weETH, WETH"
-# )
 filter_tokens = [t.strip().upper() for t in token_input.split(",") if t.strip()]
 
 # dataframe view after applying the two filters
@@ -381,10 +368,6 @@ if filter_wallets:
     df_wallets_view = df_wallets_view[df_wallets_view["Wallet"].str.lower().isin(filter_wallets)]
 if filter_tokens:
     df_wallets_view = df_wallets_view[df_wallets_view["Token"].str.upper().isin(filter_tokens)]
-# df_wallets_view = df_wallets[
-#     df_wallets["Wallet"].str.lower().isin(filter_wallets) &
-#     df_wallets["Token"].str.upper().isin(filter_tokens)
-# ].copy()
 
 st.subheader("💰 Wallet Balances")
 # if not df_wallets.empty:
@@ -394,9 +377,20 @@ if not df_wallets_view.empty:
     hist_df   = load_wallet_snapshot(snap_date) if snap_date != datetime.date.today() else pd.DataFrame()
     src_df    = hist_df if not hist_df.empty else live_df
 
-    df = src_df.sort_values("USD Value", ascending=False).copy()
+    # df = src_df.sort_values("USD Value", ascending=False).copy()
 
-    # df = df_wallets_view.sort_values("USD Value", ascending=False).copy()
+    df_filtered = src_df.copy()
+    if filter_wallets:
+        df_filtered = df_filtered[df_filtered["Wallet"].str.lower().isin(filter_wallets)]
+    if filter_tokens:
+        df_filtered = df_filtered[df_filtered["Token"].str.upper().isin(filter_tokens)]
+
+    if df_filtered.empty:
+        st.info("No wallet balances match the current filters.")
+        st.markdown("---")
+    else:
+        df = df_filtered.sort_values("USD Value", ascending=False).copy()
+
     csv_df = df.rename(columns={
         "Wallet":        "full_address",
         "Chain":         "blockchain",
