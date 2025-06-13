@@ -375,6 +375,8 @@ st.subheader("💰 Wallet Balances")
 if not df_wallets_view.empty:
     live_df   = df_wallets.copy()
     hist_df   = load_wallet_snapshot(snap_date) if snap_date != datetime.date.today() else pd.DataFrame()
+    if hist_df.empty and snap_date != datetime.date.today():
+        st.warning("No snapshot found for that date – showing live data instead.")
     src_df    = hist_df if not hist_df.empty else live_df
 
     # df = src_df.sort_values("USD Value", ascending=False).copy()
