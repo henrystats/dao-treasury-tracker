@@ -334,7 +334,7 @@ st.markdown("---")
 # ───────────── wallet table ─────────────
 # # ─── wallet-table filters (only affect the table below) ───
 # --- wallet-table filters -----------------------------------
-col_w, col_t = st.columns(2)
+col_w, col_t, col_d = st.columns(3)
 
 with col_w:
     wallet_input = st.text_input(
@@ -352,10 +352,12 @@ with col_t:
         help="Multiple Tokens are separated by commas, e.g. weETH, WETH"
     )
 
-snap_date = st.sidebar.date_input(
-    "📅 Snapshot date (leave as today for live data)",
-    datetime.date.today(),
-)
+with col_d:
+    snap_date = st.date_input(
+        "📅 Snapshot date",
+        datetime.date.today(),
+        help="Pick a past date to load the latest snapshot for that day. Today = live data."
+    )
 
 # wallet_input = st.text_input(
 #     "👛 Wallet filter",
