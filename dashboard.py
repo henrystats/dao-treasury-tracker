@@ -281,21 +281,40 @@ if not hist.empty:
 st.markdown("---")
 
 # ───────────── wallet table ─────────────
-# ─── wallet-table filters (only affect the table below) ───
-wallet_input = st.text_input(
-    "👛 Wallet filter",
-    key="wal_filter",
-    placeholder="All Wallets",
-    help="Addresses are separated by commas, e.g. 0x345…5775, 0x4646…5656"
-)
+# # ─── wallet-table filters (only affect the table below) ───
+# --- wallet-table filters -----------------------------------
+col_w, col_t = st.columns(2)
+
+with col_w:
+    wallet_input = st.text_input(
+        "👛 Wallet filter",
+        key="wal_filter",
+        placeholder="All Wallets",
+        help="Addresses are separated by commas, e.g. 0x345…5775, 0x4646…5656"
+    )
+
+with col_t:
+    token_input = st.text_input(
+        "🪙 Token filter",
+        key="tok_filter",
+        placeholder="All Tokens",
+        help="Token symbols are separated by commas, e.g. weETH, WETH"
+    )
+
+# wallet_input = st.text_input(
+#     "👛 Wallet filter",
+#     key="wal_filter",
+#     placeholder="All Wallets",
+#     help="Addresses are separated by commas, e.g. 0x345…5775, 0x4646…5656"
+# )
 filter_wallets = [w.strip().lower() for w in wallet_input.split(",") if w.strip()]
 
-token_input = st.text_input(
-    "🪙 Token filter",
-    key="tok_filter",
-    placeholder="All Tokens",
-    help="Token symbols are separated by commas, e.g. weETH, WETH"
-)
+# token_input = st.text_input(
+#     "🪙 Token filter",
+#     key="tok_filter",
+#     placeholder="All Tokens",
+#     help="Token symbols are separated by commas, e.g. weETH, WETH"
+# )
 filter_tokens = [t.strip().upper() for t in token_input.split(",") if t.strip()]
 
 # dataframe view after applying the two filters
