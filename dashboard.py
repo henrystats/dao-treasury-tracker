@@ -13,7 +13,7 @@ WALLET_SHEET = "wallet_balances"
 SA_INFO    = json.loads(st.secrets["gcp_service_account"])
 
 CHAIN_IDS   = ["eth", "arb", "base", "scrl", "avax", "era", "bsc", "op", "linea"]
-CHAIN_NAMES = {"eth":"Ethereum","arb":"Arbitrum","base":"Base","scrl":"Scroll","avax":"Avalanche","era":"zkSync Era","bsc":"BNB Chain","op":"Optimism,
+CHAIN_NAMES = {"eth":"Ethereum","arb":"Arbitrum","base":"Base","scrl":"Scroll","avax":"Avalanche","era":"zkSync Era","bsc":"BNB Chain","op":"Optimism",
                 "linea":"Linea"
             }
 headers     = {"AccessKey": ACCESS_KEY}
