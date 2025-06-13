@@ -345,6 +345,11 @@ if not df_wallets_view.empty:
     #     lambda t:f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
     st.markdown(md_table(df,["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
+    # ─── download filtered wallet table ───
+    csv_bytes = df.to_csv(index=False).encode("utf-8")
+    st.download_button("⬇️ Download CSV", csv_bytes,
+                       file_name="wallet_balances.csv",
+                       mime="text/csv")
 # else:
 #     st.info("No wallet balances found.")
 else:
