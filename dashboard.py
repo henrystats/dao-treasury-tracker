@@ -332,7 +332,6 @@ if not hist.empty:
 st.markdown("---")
 
 # ───────────── wallet table ─────────────
-# # ─── wallet-table filters (only affect the table below) ───
 # --- wallet-table filters -----------------------------------
 col_w, col_t, col_d = st.columns(3)
 
@@ -370,16 +369,12 @@ if filter_tokens:
     df_wallets_view = df_wallets_view[df_wallets_view["Token"].str.upper().isin(filter_tokens)]
 
 st.subheader("💰 Wallet Balances")
-# if not df_wallets.empty:
-#     df=df_wallets.sort_values("USD Value",ascending=False).copy()
 if not df_wallets_view.empty:
     live_df   = df_wallets.copy()
     hist_df   = load_wallet_snapshot(snap_date) if snap_date != datetime.date.today() else pd.DataFrame()
     if hist_df.empty and snap_date != datetime.date.today():
         st.warning("No snapshot found for that date – showing live data instead.")
     src_df    = hist_df if not hist_df.empty else live_df
-
-    # df = src_df.sort_values("USD Value", ascending=False).copy()
 
     df_filtered = src_df.copy()
     if filter_wallets:
@@ -409,18 +404,13 @@ if not df_wallets_view.empty:
                   f'width="16" style="vertical-align:middle;margin-right:4px;"> {r.Token}',
         axis=1
     )
-    # df["Token"]=df["Token"].apply(
-    #     lambda t:f'<img src="{TOKEN_LOGOS.get(t,"")}" width="16" style="vertical-align:middle;margin-right:4px;"> {t}')
     st.markdown(md_table(df,["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
     # ─── download filtered wallet table ───
-    # ─── download filtered wallet table (raw) ───
     csv_bytes = csv_df.to_csv(index=False).encode("utf-8")
     st.download_button("⬇️ Download CSV", csv_bytes,
                        file_name="wallet_balances.csv",
                        mime="text/csv")
-# else:
-#     st.info("No wallet balances found.")
 else:
     st.info("No wallet balances match the current filters.")
 
@@ -491,12 +481,6 @@ if not df_protocols.empty:
                         for t in grp["Token"]
                     )
 
-                    # token_col = " + ".join(
-                    #     f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
-                    #     f'style="vertical-align:middle;margin-right:4px;"> {t}'
-                    #     for t in grp["Token"]
-                    # )
-
                     bal_col = " + ".join(
                         f'{bal:,.4f} {tok}' for tok, bal in
                         zip(grp["Token"], grp["Token Balance"])
@@ -528,10 +512,6 @@ if not df_protocols.empty:
                               f'width="16" style="vertical-align:middle;margin-right:4px;"> {r.Token}',
                     axis=1
                 )
-                # part["Token"] = part["Token"].apply(
-                #     lambda t: f'<img src="{TOKEN_LOGOS.get(t, "")}" width="16" '
-                #               f'style="vertical-align:middle;margin-right:4px;"> {t}'
-                # )
                 part["Token Balance"] = part["Token Balance"].apply(lambda x: f"{x:,.4f}")
                 part["USD Value"]      = part["USD Value"].apply(fmt_usd)
 
