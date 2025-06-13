@@ -282,24 +282,24 @@ st.markdown("---")
 
 # ───────────── wallet table ─────────────
 # ─── wallet-table filters (only affect the table below) ───
-filter_wallets = st.multiselect(
-    "👛 Wallet filter",
-    WALLETS,
-    default=WALLETS,
+wallet_input = st.text_input(
+    "👛 Wallet filter – comma-separated addresses",
+    value=",".join(WALLETS),
     key="wal_filter"
 )
+filter_wallets = [w.strip().lower() for w in wallet_input.split(",") if w.strip()]
 
-filter_tokens = st.multiselect(
-    "🪙 Token filter",
-    sorted(df_wallets["Token"].unique()),
-    default=sorted(df_wallets["Token"].unique()),
+token_input = st.text_input(
+    "🪙 Token filter – comma-separated symbols",
+    value=",".join(sorted(df_wallets["Token"].unique())),
     key="tok_filter"
 )
+filter_tokens = [t.strip().upper() for t in token_input.split(",") if t.strip()]
 
 # dataframe view after applying the two filters
 df_wallets_view = df_wallets[
-    df_wallets["Wallet"].isin(filter_wallets) &
-    df_wallets["Token"].isin(filter_tokens)
+    df_wallets["Wallet"].str.lower().isin(filter_wallets) &
+    df_wallets["Token"].str.upper().isin(filter_tokens)
 ].copy()
 
 st.subheader("💰 Wallet Balances")
