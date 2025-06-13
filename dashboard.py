@@ -64,12 +64,31 @@ TOKEN_LOGOS = {
     "EIGEN": "https://static.debank.com/image/project/logo_url/eigenlayer/60961d60d58c7619cf845ff06b2236af.png"
 }
 PROTOCOL_LOGOS = {
-    "Curve":"https://static.debank.com/image/project/logo_url/curve/aa991be165e771cff87ae61e2a61ef68.png",
-    "Aerodrome":"https://static.debank.com/image/project/logo_url/base_aerodrome/f02d753bc321dc8ba480f0424a686482.png",
+    "Aave V3":           "https://static.debank.com/image/project/logo_url/aave3/54df7839ab09493ba7540ab832590255.png",
+    "Aerodrome":         "https://static.debank.com/image/project/logo_url/base_aerodrome/f02d753bc321dc8ba480f0424a686482.png",
+    "Curve":             "https://static.debank.com/image/project/logo_url/curve/aa991be165e771cff87ae61e2a61ef68.png",
+    "ether.fi":          "https://static.debank.com/image/project/logo_url/etherfi/6c3ea6e8f02322fa9b417e0726978c41.png",
+    "Fluid":             "https://static.debank.com/image/project/logo_url/fluid/faeb92cc788df0676eb21db724f80704.png",
+    "Curve LlamaLend":   "https://static.debank.com/image/project/logo_url/curve/aa991be165e771cff87ae61e2a61ef68.png",
+    "Pendle V2":         "https://static.debank.com/image/project/logo_url/pendle2/d5cfacd3b8f7e0ec161c0de9977cabbd.png",
+    "Merkl":             "https://static.debank.com/image/project/logo_url/merkl/7c4a97689b3310cc3436bc6e1a215476.png",
+    "Venus":             "https://static.debank.com/image/project/logo_url/bsc_venus/07de2297c7aec45b2d52d9e75754789f.png",
+    "Balancer V2":       "https://static.debank.com/image/project/logo_url/balancer2/4318f98916b139a44996fc06531e9074.png",
+    "Aerodrome V3":      "https://static.debank.com/image/project/logo_url/base_aerodrome/f02d753bc321dc8ba480f0424a686482.png",
+    "Cygnus Finance":    "https://static.debank.com/image/project/logo_url/base_cygnus/e06bf44972afa9a00a230dd537975223.png",
+    "Maverick V2":       "https://static.debank.com/image/project/logo_url/maverick/a7a186ccd39807ad670d5ead78effb4e.png",
+    "Convex":            "https://static.debank.com/image/project/logo_url/convex/f7de1d568d41ea275b35558c391ab86c.png",
+    "LIDO":              "https://static.debank.com/image/project/logo_url/lido/081388ebc44fa042561749bd5338d49e.png",
+    "Optimism Bridge":   "https://static.debank.com/image/project/logo_url/optimism_bridge/5b42ae489cd2181dd500137c21ca00e2.png",
+    "NURI Exchange":     "https://static.debank.com/image/project/logo_url/scrl_nuri/a8d3cd4269ca15424452a19e7cad8606.png",
+    "Silo":              "https://static.debank.com/image/project/logo_url/silo/c1c547e12ac67b71dcf555f4fba77210.png",
+    "SushiSwap":         "https://static.debank.com/image/project/logo_url/sushiswap/248a91277aac1ac16a457b8f61957089.png",
+    "Yearn V2":          "https://static.debank.com/image/project/logo_url/yearn2/b0f88529a907964dbbf154337906db19.png",
 }
 COLOR_JSON = {
     "Ethereum":"#627EEA","Arbitrum":"#28A0F0","Base":"#0052FF","Scroll":"#FEDA03",
     "Curve":"#FF007A","Aave":"#B6509E","Lido":"#00A3FF","Aerodrome":"#1AAB9B",
+    "ether.fi":"#800DEE","Aave V3":"#B6509E",
 }
 BLOCKCHAIN_LOGOS = {
     "Ethereum": "https://static.debank.com/image/coin/logo_url/eth/6443cdccced33e204d90cb723c632917.png",
