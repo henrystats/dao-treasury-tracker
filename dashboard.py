@@ -290,7 +290,7 @@ with col_w:
         "👛 Wallet filter",
         key="wal_filter",
         placeholder="All Wallets",
-        help="Addresses are separated by commas, e.g. 0x345…5775, 0x4646…5656"
+        help="Multiple Addresses are separated by commas, e.g. 0x345…5775, 0x4646…5656"
     )
 
 with col_t:
@@ -298,7 +298,7 @@ with col_t:
         "🪙 Token filter",
         key="tok_filter",
         placeholder="All Tokens",
-        help="Token symbols are separated by commas, e.g. weETH, WETH"
+        help="Multiple Tokens are separated by commas, e.g. weETH, WETH"
     )
 
 # wallet_input = st.text_input(
