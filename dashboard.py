@@ -444,8 +444,15 @@ if not df_wallets_view.empty:
     
     else:
         df = df_filtered.sort_values("USD Value", ascending=False).copy()
-    
-        csv_df = df.rename({...})
+        csv_df = df.rename(
+            columns={
+                "Wallet":        "full_address",
+                "Chain":         "blockchain",
+                "Token":         "token_symbol",
+                "Token Balance": "token_balance",
+                "USD Value":     "usd_value",
+            }
+        )
         csv_df["date"] = snap_date.strftime("%d-%m-%Y")
         df["USD Value"] = df["USD Value"].apply(fmt_usd)
     
