@@ -480,43 +480,6 @@ if not df_wallets_view.empty:
                            file_name="wallet_balances.csv",
                            mime="text/csv")
 
-    # if df_filtered.empty:
-    #     st.info("No wallet balances match the current filters.")
-    #     st.markdown("---")
-    # else:
-    #     df = df_filtered.sort_values("USD Value", ascending=False).copy()
-
-    # csv_df = df.rename(columns={
-    #     "Wallet":        "full_address",
-    #     "Chain":         "blockchain",
-    #     "Token":         "token_symbol",
-    #     "Token Balance": "token_balance",
-    #     "USD Value":     "usd_value",
-    # })
-    # csv_df["date"] = snap_date.strftime("%d-%m-%Y")
-    # df["USD Value"] = df["USD Value"].apply(fmt_usd)
-    
-    # if "timestamp" in df.columns:                            # live data has none
-    #     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-    #     df = (df.sort_values("timestamp", ascending=False)
-    #             .groupby(["Wallet", "Token"], as_index=False)
-    #             .first())                                     # keep latest row
-    # df["Token Balance"]=df["Token Balance"].apply(lambda x:f"{x:,.4f}")
-    # df["Wallet"]=df["Wallet"].apply(link_wallet)
-    # df["Token"] = df.apply(
-    #     lambda r: f'<img src="{TOKEN_LOGOS.get(r.Token) or BLOCKCHAIN_LOGOS.get(r.Chain,"")}" '
-    #               f'width="16" style="vertical-align:middle;margin-right:4px;"> {r.Token}',
-    #     axis=1
-    # )
-    # if "timestamp" in df.columns:
-    #     df = df.drop(columns=["timestamp"])
-    # st.markdown(md_table(df,["Wallet","Chain","Token","Token Balance","USD Value"]),
-    #             unsafe_allow_html=True)
-    # # ─── download filtered wallet table ───
-    # csv_bytes = csv_df.to_csv(index=False).encode("utf-8")
-    # st.download_button("⬇️ Download CSV", csv_bytes,
-    #                    file_name="wallet_balances.csv",
-    #                    mime="text/csv")
 else:
     st.info("No wallet balances match the current filters.")
 
