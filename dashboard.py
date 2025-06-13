@@ -8,6 +8,7 @@ st.title("📊 DeFi Treasury Tracker")
 
 ACCESS_KEY = st.secrets["ACCESS_KEY"]
 SHEET_ID   = st.secrets["sheet_id"]
+WALLET_SHEET = "wallet_balances"       
 SA_INFO    = json.loads(st.secrets["gcp_service_account"])
 
 CHAIN_IDS   = ["eth", "arb", "base", "scrl"]
@@ -84,6 +85,30 @@ def md_table(df,cols):
     return "\n".join([hdr,sep,*rows])
 def ensure_utc(ts: pd.Timestamp):
     return ts if ts.tzinfo else ts.tz_localize("UTC")
+@st.cache_data(ttl=600, show_spinner=False)
+def load_wallet_snapshot(day: datetime.date) -> pd.DataFrame:
+    try:
+        ws = _gc().open_by_key(SHEET_ID).worksheet(WALLET_SHEET)
+        df = pd.DataFrame(ws.get_all_records())
+        if df.empty:
+            return df
+        df["date"] = pd.to_datetime(df["date"], format="%d-%m-%Y",
+                                    errors="coerce").dt.date
+        df = df[df["date"] == day]
+        df = df.rename(columns={
+            "full_address": "Wallet",
+            "blockchain":   "Chain",
+            "token_symbol": "Token",
+            "token_balance": "Token Balance",
+            "usd_value":    "USD Value",
+        })
+        df["USD Value"] = pd.to_numeric(df["USD Value"], errors="coerce")
+        return df
+    except Exception:
+        return pd.DataFrame(columns=[
+            "Wallet", "Chain", "Token",
+            "Token Balance", "USD Value", "date"
+        ])
 
 # ───────────── Debank fetchers ─────────────
 @st.cache_data(ttl=600, show_spinner=False)
@@ -162,6 +187,32 @@ def write_snapshot():
     cat_sum=(combined.assign(cat=combined["Token"].map(token_category))
                     .groupby("cat")["USD Value"].sum())
     rows += [[hour,"token",c,round(v,2)] for c,v in cat_sum.items()]
+    # ─── snapshot wallet balances ───────────────────────────────
+    try:
+        wb_ws = sh.worksheet(WALLET_SHEET)
+    except gspread.WorksheetNotFound:
+        wb_ws = sh.add_worksheet(WALLET_SHEET, rows=2, cols=6)
+        wb_ws.append_row(
+            ["full_address", "blockchain", "token_symbol",
+             "token_balance", "usd_value", "date"]
+        )
+
+    date_str = datetime.datetime.utcnow().strftime("%d-%m-%Y")
+    wb_rows = (
+        df_wallets.assign(date=date_str)                # add date col
+                  .rename(columns={
+                      "Wallet":        "full_address",
+                      "Chain":         "blockchain",
+                      "Token":         "token_symbol",
+                      "Token Balance": "token_balance",
+                      "USD Value":     "usd_value",
+                  })
+                  [["full_address", "blockchain", "token_symbol",
+                    "token_balance", "usd_value", "date"]]
+                  .values.tolist()
+    )
+    wb_ws.append_rows(wb_rows, value_input_option="RAW")
+
     ws.append_rows(rows,value_input_option="RAW")
 
 @st.cache_data(ttl=3600,show_spinner=False)
@@ -301,6 +352,11 @@ with col_t:
         help="Multiple Tokens are separated by commas, e.g. weETH, WETH"
     )
 
+snap_date = st.sidebar.date_input(
+    "📅 Snapshot date (leave as today for live data)",
+    datetime.date.today(),
+)
+
 # wallet_input = st.text_input(
 #     "👛 Wallet filter",
 #     key="wal_filter",
@@ -332,7 +388,13 @@ st.subheader("💰 Wallet Balances")
 # if not df_wallets.empty:
 #     df=df_wallets.sort_values("USD Value",ascending=False).copy()
 if not df_wallets_view.empty:
-    df = df_wallets_view.sort_values("USD Value", ascending=False).copy()
+    live_df   = df_wallets.copy()
+    hist_df   = load_wallet_snapshot(snap_date) if snap_date != datetime.date.today() else pd.DataFrame()
+    src_df    = hist_df if not hist_df.empty else live_df
+
+    df = src_df.sort_values("USD Value", ascending=False).copy()
+
+    # df = df_wallets_view.sort_values("USD Value", ascending=False).copy()
     csv_df = df.rename(columns={
         "Wallet":        "full_address",
         "Chain":         "blockchain",
@@ -340,6 +402,7 @@ if not df_wallets_view.empty:
         "Token Balance": "token_balance",
         "USD Value":     "usd_value",
     })
+    csv_df["date"] = snap_date.strftime("%d-%m-%Y")
     df["USD Value"]=df["USD Value"].apply(fmt_usd)
     df["Token Balance"]=df["Token Balance"].apply(lambda x:f"{x:,.4f}")
     df["Wallet"]=df["Wallet"].apply(link_wallet)
