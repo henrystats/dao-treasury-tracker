@@ -333,6 +333,13 @@ st.subheader("💰 Wallet Balances")
 #     df=df_wallets.sort_values("USD Value",ascending=False).copy()
 if not df_wallets_view.empty:
     df = df_wallets_view.sort_values("USD Value", ascending=False).copy()
+    csv_df = df.rename(columns={
+        "Wallet":        "full_address",
+        "Chain":         "blockchain",
+        "Token":         "token_symbol",
+        "Token Balance": "token_balance",
+        "USD Value":     "usd_value",
+    })
     df["USD Value"]=df["USD Value"].apply(fmt_usd)
     df["Token Balance"]=df["Token Balance"].apply(lambda x:f"{x:,.4f}")
     df["Wallet"]=df["Wallet"].apply(link_wallet)
@@ -346,7 +353,8 @@ if not df_wallets_view.empty:
     st.markdown(md_table(df,["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
     # ─── download filtered wallet table ───
-    csv_bytes = df.to_csv(index=False).encode("utf-8")
+    # ─── download filtered wallet table (raw) ───
+    csv_bytes = csv_df.to_csv(index=False).encode("utf-8")
     st.download_button("⬇️ Download CSV", csv_bytes,
                        file_name="wallet_balances.csv",
                        mime="text/csv")
