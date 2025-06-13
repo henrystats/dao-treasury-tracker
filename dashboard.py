@@ -1,6 +1,7 @@
 import streamlit as st, requests, pandas as pd, plotly.express as px, json, gspread
 import datetime
 from google.oauth2.service_account import Credentials
+from functools import lru_cache            
 
 # ───────────────────────── CONFIG ────────────────────────────
 st.set_page_config(page_title="DeFi Treasury Tracker", layout="wide")
@@ -133,6 +134,21 @@ def load_wallets():
 
 WALLETS = load_wallets()
 
+# ───────────── Dune helpers ─────────────
+@lru_cache(maxsize=1)                      # cache for this run
+def dune_prices() -> dict:
+    """Return {token_symbol: usd_price} from the Dune query."""
+    api  = st.secrets["DUNE_API_KEY"]
+    qid  = st.secrets["DUNE_QUERY_ID"]
+    url  = f"https://api.dune.com/api/v1/query/{qid}/results?api_key={api}"
+    try:
+        resp = requests.get(url, timeout=15).json()
+        rows = resp["result"]["rows"]      # [{'token_symbol': 'weETH', 'usd_price': 3300}, …]
+        return {r["token_symbol"]: float(r["usd_price"]) for r in rows}
+    except Exception as e:
+        st.warning(f"⚠️ Dune price fetch failed ({e}) – off-chain balances skipped.")
+        return {}
+
 # ───────────── helpers ─────────────
 def first_symbol(t): return t.get("optimized_symbol") or t.get("display_symbol") or t.get("symbol")
 def link_wallet(a):  return f"[{a[:6]}…{a[-4:]}](https://debank.com/profile/{a})"
@@ -198,6 +214,40 @@ def fetch_protocols(wallet):
     r=requests.get(url,params={"id":wallet,"chain_ids":",".join(CHAIN_IDS)},headers=headers)
     return r.json() if r.status_code==200 else []
 
+# ───────────── off-chain sheet fetcher ─────────────
+@st.cache_data(ttl=600, show_spinner=False)
+def fetch_offchain() -> pd.DataFrame:
+    """
+    Sheet “offchain” has:
+      wallet_address | blockchain | token_symbol | token_balance | protocol
+    Convert it to the same shape as df_protocols.
+    """
+    try:
+        ws  = _gc().open_by_key(SHEET_ID).worksheet("offchain")
+        df  = pd.DataFrame(ws.get_all_records())
+        if df.empty:
+            return pd.DataFrame(columns=df_protocols.columns)  # placeholder
+        prices = dune_prices()           # live prices from Dune
+        df["usd_price"]   = df["token_symbol"].map(prices)
+        df["USD Value"]   = pd.to_numeric(df["token_balance"], errors="coerce") * df["usd_price"]
+        df = df.dropna(subset=["USD Value"])                   # drop if no price
+        df = df.rename(columns={
+            "wallet_address": "Wallet",
+            "blockchain":     "Blockchain",
+            "token_symbol":   "Token",
+            "token_balance":  "Token Balance",
+            "protocol":       "Protocol",
+        })
+        df["Classification"] = ""         # leave empty
+        df["Pool"]           = ""         # N/A
+        return df[
+            ["Protocol", "Classification", "Blockchain", "Pool",
+             "Wallet", "Token", "Token Balance", "USD Value"]
+        ]
+    except Exception as e:
+        st.warning(f"⚠️ Off-chain sheet fetch failed ({e}) – skipping.")
+        return pd.DataFrame(columns=df_protocols.columns)
+
 # ───────────── sidebar ─────────────
 sel_wallets = WALLETS
 sel_chains  = st.sidebar.multiselect("Chains",  list(CHAIN_NAMES.values()), default=list(CHAIN_NAMES.values()))
@@ -232,6 +282,9 @@ df_protocols=pd.DataFrame(prot_rows)
 df_protocols=df_protocols[df_protocols["Blockchain"].isin(sel_chains)].copy()
 df_protocols["USD Value"]=pd.to_numeric(df_protocols["USD Value"],errors="coerce")
 df_protocols=df_protocols[df_protocols["USD Value"]>=1]                # filter <1
+# fetch + append off-chain balances
+df_offchain   = fetch_offchain()
+df_protocols  = pd.concat([df_protocols, df_offchain], ignore_index=True)
 
 # ───────────── snapshot (unchanged) ─────────────
 def write_snapshot():
