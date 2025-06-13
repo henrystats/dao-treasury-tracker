@@ -15,7 +15,7 @@ SA_INFO    = json.loads(st.secrets["gcp_service_account"])
 CHAIN_IDS   = ["eth", "arb", "base", "scrl", "avax", "era", "bsc", "op", "linea", "corn", "zircuit", "bera", "blast", "swell", "uni", "sonic", "hyper"]
 CHAIN_NAMES = {"eth":"Ethereum","arb":"Arbitrum","base":"Base","scrl":"Scroll","avax":"Avalanche","era":"zkSync Era","bsc":"BNB Chain","op":"Optimism",
                 "linea":"Linea","corn":"Corn","zircuit":"Zircuit","bera":"Berachain","blast":"Blast","swell":"SwellChain","uni":"Unichain",
-               "sonic":"Sonic","hyper":"Hyperliquid
+               "sonic":"Sonic","hyper":"Hyperliquid"
             }
 headers     = {"AccessKey": ACCESS_KEY}
 
