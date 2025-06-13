@@ -472,7 +472,8 @@ if not df_wallets_view.empty:
         if "timestamp" in df.columns:
             df = df.drop(columns=["timestamp"])
     
-        st.markdown(md_table(df,[...]), unsafe_allow_html=True)
+        st.markdown(md_table(df,["Wallet","Chain","Token","Token Balance","USD Value"]),
+                    unsafe_allow_html=True)
     
         csv_bytes = csv_df.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download CSV", csv_bytes,
