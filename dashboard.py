@@ -147,6 +147,11 @@ def load_wallet_snapshot(day: datetime.date) -> pd.DataFrame:
             "usd_value":    "USD Value",
         })
         df["USD Value"] = pd.to_numeric(df["USD Value"], errors="coerce")
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        
+        df = (df.sort_values("timestamp", ascending=False)        # newest first
+                .groupby(["Wallet", "Token"], as_index=False)
+                .first())                                         # keep latest
         return df
     except Exception:
         return pd.DataFrame(columns=[
@@ -238,12 +243,14 @@ def write_snapshot():
         wb_ws = sh.add_worksheet(WALLET_SHEET, rows=2, cols=6)
         wb_ws.append_row(
             ["full_address", "blockchain", "token_symbol",
-             "token_balance", "usd_value", "date"]
+             "token_balance", "usd_value", "date", "timestamp"]
         )
 
-    date_str = datetime.datetime.utcnow().strftime("%d-%m-%Y")
+    timestamp_iso = datetime.datetime.utcnow().isoformat(timespec="seconds")
+    date_str      = datetime.datetime.utcnow().strftime("%d-%m-%Y")
+    
     wb_rows = (
-        df_wallets.assign(date=date_str)                # add date col
+        df_wallets.assign(date=date_str, timestamp=timestamp_iso)   # ⬅️ add both cols
                   .rename(columns={
                       "Wallet":        "full_address",
                       "Chain":         "blockchain",
@@ -252,12 +259,33 @@ def write_snapshot():
                       "USD Value":     "usd_value",
                   })
                   [["full_address", "blockchain", "token_symbol",
-                    "token_balance", "usd_value", "date"]]
+                    "token_balance", "usd_value", "date", "timestamp"]]
                   .values.tolist()
     )
+
+    # timestamp_iso = datetime.datetime.utcnow().isoformat(timespec="seconds")
+    # date_str = datetime.datetime.utcnow().strftime("%d-%m-%Y")
+    # wb_rows = (
+    #     df_wallets.assign(date=date_str)                # add date col
+    #               .rename(columns={
+    #                   "Wallet":        "full_address",
+    #                   "Chain":         "blockchain",
+    #                   "Token":         "token_symbol",
+    #                   "Token Balance": "token_balance",
+    #                   "USD Value":     "usd_value",
+    #               })
+    #               [["full_address", "blockchain", "token_symbol",
+    #                 "token_balance", "usd_value", "date", "timestamp"]]
+    #               .values.tolist()
+    # )
     wb_ws.append_rows(wb_rows, value_input_option="RAW")
 
     ws.append_rows(rows,value_input_option="RAW")
+    # df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    # df = (df.sort_values("timestamp", ascending=False)          # newest first
+    #         .groupby(["full_address", "token_symbol"], as_index=False)
+    #         .first())                                           # keep latest row
+
 
 @st.cache_data(ttl=3600,show_spinner=False)
 def _hourly(): write_snapshot(); return True
@@ -357,7 +385,10 @@ if not hist.empty:
         p["usd_value"]=pd.to_numeric(p["usd_value"],errors="coerce").fillna(0)
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
         p.loc[~p["name"].isin(top),"name"]="Others"
-        fig_p=px.area(p,x="timestamp",y="usd_value",color="name")
+        fig_p = px.area(
+            p, x="timestamp", y="usd_value", color="name",
+            color_discrete_map=COLOR_JSON                          # ⬅️ new
+        )
         fig_p.update_layout(title="Top Protocols",xaxis_title="Date",yaxis_title="")
         fig_p.update_yaxes(tickformat="$~s")
         area1.plotly_chart(fig_p,use_container_width=True)
@@ -368,7 +399,10 @@ if not hist.empty:
         t["usd_value"]=pd.to_numeric(t["usd_value"],errors="coerce").fillna(0)
         cats=["ETH","Stables","Others"]
         t.loc[~t["name"].isin(cats),"name"]="Others"
-        fig_t=px.area(t,x="timestamp",y="usd_value",color="name")
+        fig_t = px.area(
+            t, x="timestamp", y="usd_value", color="name",
+            color_discrete_map=COLOR_JSON                          # ⬅️ new
+        )
         fig_t.update_layout(title="Token Categories",xaxis_title="Date",yaxis_title="")
         fig_t.update_yaxes(tickformat="$~s")
         area2.plotly_chart(fig_t,use_container_width=True)
@@ -440,7 +474,16 @@ if not df_wallets_view.empty:
         "USD Value":     "usd_value",
     })
     csv_df["date"] = snap_date.strftime("%d-%m-%Y")
-    df["USD Value"]=df["USD Value"].apply(fmt_usd)
+    df["USD Value"] = df["USD Value"].apply(fmt_usd)
+    
+    if "timestamp" in df.columns:                            # live data has none
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        df = (df.sort_values("timestamp", ascending=False)
+                .groupby(["Wallet", "Token"], as_index=False)
+                .first())
+    # df = (df.sort_values("timestamp", ascending=False)        # newest first
+    #         .groupby(["Wallet", "Token"], as_index=False)
+    #         .first())                                         # keep latest row
     df["Token Balance"]=df["Token Balance"].apply(lambda x:f"{x:,.4f}")
     df["Wallet"]=df["Wallet"].apply(link_wallet)
     df["Token"] = df.apply(
@@ -448,6 +491,8 @@ if not df_wallets_view.empty:
                   f'width="16" style="vertical-align:middle;margin-right:4px;"> {r.Token}',
         axis=1
     )
+    if "timestamp" in df.columns:
+        df = df.drop(columns=["timestamp"])
     st.markdown(md_table(df,["Wallet","Chain","Token","Token Balance","USD Value"]),
                 unsafe_allow_html=True)
     # ─── download filtered wallet table ───
