@@ -283,24 +283,31 @@ st.markdown("---")
 # ───────────── wallet table ─────────────
 # ─── wallet-table filters (only affect the table below) ───
 wallet_input = st.text_input(
-    "👛 Wallet filter – comma-separated addresses",
-    value=",".join(WALLETS),
-    key="wal_filter"
+    "👛 Wallet filter",
+    key="wal_filter",
+    placeholder="All Wallets",
+    help="Addresses are separated by commas, e.g. 0x345…5775, 0x4646…5656"
 )
 filter_wallets = [w.strip().lower() for w in wallet_input.split(",") if w.strip()]
 
 token_input = st.text_input(
-    "🪙 Token filter – comma-separated symbols",
-    value=",".join(sorted(df_wallets["Token"].unique())),
-    key="tok_filter"
+    "🪙 Token filter",
+    key="tok_filter",
+    placeholder="All Tokens",
+    help="Token symbols are separated by commas, e.g. weETH, WETH"
 )
 filter_tokens = [t.strip().upper() for t in token_input.split(",") if t.strip()]
 
 # dataframe view after applying the two filters
-df_wallets_view = df_wallets[
-    df_wallets["Wallet"].str.lower().isin(filter_wallets) &
-    df_wallets["Token"].str.upper().isin(filter_tokens)
-].copy()
+df_wallets_view = df_wallets.copy()
+if filter_wallets:
+    df_wallets_view = df_wallets_view[df_wallets_view["Wallet"].str.lower().isin(filter_wallets)]
+if filter_tokens:
+    df_wallets_view = df_wallets_view[df_wallets_view["Token"].str.upper().isin(filter_tokens)]
+# df_wallets_view = df_wallets[
+#     df_wallets["Wallet"].str.lower().isin(filter_wallets) &
+#     df_wallets["Token"].str.upper().isin(filter_tokens)
+# ].copy()
 
 st.subheader("💰 Wallet Balances")
 # if not df_wallets.empty:
