@@ -426,14 +426,23 @@ def load_history():
         return h.dropna(subset=["timestamp","usd_value"])
     except: return pd.DataFrame(columns=["timestamp","history_type","name","usd_value"])
 
-hist=load_history()
+hist = load_history()
+
+# ── NEW: keep only the *latest* snapshot of every day ──────────────
+if not hist.empty:
+    hist_day = (hist.sort_values("timestamp")                         # oldest→newest
+                    .assign(day=lambda d: d["timestamp"].dt.date)     # 2025-06-15, …
+                    .groupby(["history_type", "name", "day"], as_index=False)
+                    .last())                                          # row with latest hour
+else:
+    hist_day = hist
 
 st.markdown("## 📈 Historical Data")
 area1,area2=st.columns(2)
 
 if not hist.empty:
     # protocol area
-    p=hist[hist["history_type"]=="protocol"].copy()
+    p = hist_day[hist_day["history_type"] == "protocol"].copy()
     if not p.empty:
         p["usd_value"]=pd.to_numeric(p["usd_value"],errors="coerce").fillna(0)
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
@@ -447,7 +456,7 @@ if not hist.empty:
         area1.plotly_chart(fig_p,use_container_width=True)
 
     # token area
-    t=hist[hist["history_type"]=="token"].copy()
+    t = hist_day[hist_day["history_type"] == "token"].copy()
     if not t.empty:
         t["usd_value"]=pd.to_numeric(t["usd_value"],errors="coerce").fillna(0)
         cats=["ETH","Stables","Others"]
