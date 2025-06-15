@@ -431,7 +431,7 @@ hist = load_history()
 # ── NEW: keep only the *latest* snapshot of every day ──────────────
 if not hist.empty:
     hist_day = (hist.sort_values("timestamp")                         # oldest→newest
-                    .assign(day=lambda d: d["timestamp"].dt.date)     # 2025-06-15, …
+                    .assign(day=lambda d: d["timestamp"].dt.normalize())
                     .groupby(["history_type", "name", "day"], as_index=False)
                     .last())                                          # row with latest hour
 else:
@@ -448,11 +448,12 @@ if not hist.empty:
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
         p.loc[~p["name"].isin(top),"name"]="Others"
         fig_p = px.area(
-            p, x="timestamp", y="usd_value", color="name",
-            color_discrete_map=COLOR_JSON                          # ⬅️ new
+            p, x="day", y="usd_value", color="name",
+            color_discrete_map=COLOR_JSON                          
         )
         fig_p.update_layout(title="Top Protocols",xaxis_title="Date",yaxis_title="")
         fig_p.update_yaxes(tickformat="$~s")
+        fig_p.update_xaxes(tickformat="%b %d %Y")
         area1.plotly_chart(fig_p,use_container_width=True)
 
     # token area
@@ -462,11 +463,12 @@ if not hist.empty:
         cats=["ETH","Stables","Others"]
         t.loc[~t["name"].isin(cats),"name"]="Others"
         fig_t = px.area(
-            t, x="timestamp", y="usd_value", color="name",
-            color_discrete_map=COLOR_JSON                          # ⬅️ new
+            t, x="day", y="usd_value", color="name",
+            color_discrete_map=COLOR_JSON                          
         )
         fig_t.update_layout(title="Token Categories",xaxis_title="Date",yaxis_title="")
         fig_t.update_yaxes(tickformat="$~s")
+        fig_t.update_xaxes(tickformat="%b %d %Y")
         area2.plotly_chart(fig_t,use_container_width=True)
 
 st.markdown("---")
