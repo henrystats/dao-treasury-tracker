@@ -159,16 +159,6 @@ def load_wallets() -> list[str]:
         st.warning("⚠️ No valid wallet addresses found in the sheet.")
     return good
 
-# @st.cache_data(ttl=600)
-# def load_wallets():
-#     try:
-#         ws=_gc().open_by_key(SHEET_ID).worksheet("addresses")
-#         vals=[v.strip() for v in ws.col_values(1) if v.strip().startswith("0x")]
-#         return vals or ["0xf40bcc0845528873784F36e5C105E62a93ff7021"]
-#     except Exception as e:
-#         st.warning(f"⚠️ Sheets fetch failed, using fallback wallet. ({e})")
-#         return ["0xf40bcc0845528873784F36e5C105E62a93ff7021"]
-
 WALLETS = load_wallets()
 
 # ───────────── Dune helpers ─────────────
