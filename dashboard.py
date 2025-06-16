@@ -297,28 +297,17 @@ for w in sel_wallets:
                 "USD Value": amt * price,
             })
 
-df_wallets=pd.DataFrame(wallet_rows)
-# ───────── build dfs ─────────
-wallet_rows = []
-for w in sel_wallets:
-    for cid in CHAIN_IDS:
-        wallet_rows += fetch_tokens(w, cid)
-
-df_wallets = pd.DataFrame(wallet_rows)
-
-# 👇 only filter if the column exists (i.e. we actually got data)
-if "Chain" in df_wallets.columns:
-    df_wallets = df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
-else:
-    st.warning("⚠️ No token data returned from Debank – frame is empty.")
-    df_wallets = pd.DataFrame(columns=["Wallet", "Chain", "Token",
-                                       "Token Balance", "USD Value"])
 cols = ["Wallet", "Chain", "Token", "Token Balance", "USD Value"]
-df_wallets = pd.DataFrame(wallet_rows, columns=cols)  # ensures columns exist
+df_wallets = pd.DataFrame(wallet_rows, columns=cols)
+
+# If no rows were returned, warn once
+if df_wallets.empty:
+    st.warning("⚠️ No token data returned from Debank – frame is empty.")
+
+# Apply chain filter & basic housekeeping
 df_wallets = df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
-df_wallets=df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
-df_wallets["USD Value"]=pd.to_numeric(df_wallets["USD Value"],errors="coerce")
-df_wallets=df_wallets[df_wallets["USD Value"]>=1]                      # filter <1
+df_wallets["USD Value"] = pd.to_numeric(df_wallets["USD Value"], errors="coerce")
+df_wallets = df_wallets[df_wallets["USD Value"] >= 1]      # drop rows < $1                    # filter <1
 
 prot_rows = []
 for w in sel_wallets:
