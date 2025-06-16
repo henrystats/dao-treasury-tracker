@@ -501,7 +501,9 @@ area1,area2=st.columns(2)
 
 if not hist.empty:
     # protocol area
-    p = hist_day[hist_day["history_type"] == "protocol"].copy()
+    p = (hist_day[hist_day["history_type"] == "protocol"]
+        .sort_values("day")              
+        .copy())
     if not p.empty:
         p["usd_value"]=pd.to_numeric(p["usd_value"],errors="coerce").fillna(0)
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
@@ -516,7 +518,9 @@ if not hist.empty:
         area1.plotly_chart(fig_p,use_container_width=True)
 
     # token area
-    t = hist_day[hist_day["history_type"] == "token"].copy()
+    t = (hist_day[hist_day["history_type"] == "token"]
+        .sort_values("day")             
+        .copy())
     if not t.empty:
         t["usd_value"]=pd.to_numeric(t["usd_value"],errors="coerce").fillna(0)
         cats=["ETH","Stables","Others"]
