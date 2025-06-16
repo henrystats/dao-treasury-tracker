@@ -301,8 +301,12 @@ cols = ["Wallet", "Chain", "Token", "Token Balance", "USD Value"]
 df_wallets = pd.DataFrame(wallet_rows, columns=cols)
 
 # If no rows were returned, warn once
-if df_wallets.empty:
+if "Chain" in df_wallets.columns:
+    df_wallets = df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
+else:
     st.warning("⚠️ No token data returned from Debank – frame is empty.")
+    df_wallets = pd.DataFrame(columns=["Wallet","Chain","Token",
+                                       "Token Balance","USD Value"])
 
 # Apply chain filter & basic housekeeping
 df_wallets = df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
