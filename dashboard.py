@@ -309,7 +309,6 @@ else:
                                        "Token Balance","USD Value"])
 
 # Apply chain filter & basic housekeeping
-df_wallets = df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
 df_wallets["USD Value"] = pd.to_numeric(df_wallets["USD Value"], errors="coerce")
 df_wallets = df_wallets[df_wallets["USD Value"] >= 1]      # drop rows < $1                    # filter <1
 
@@ -335,8 +334,14 @@ for w in sel_wallets:
                     "Token Balance": amt,
                     "USD Value":     amt * price,
                 })
-df_protocols=pd.DataFrame(prot_rows)
-df_protocols=df_protocols[df_protocols["Blockchain"].isin(sel_chains)].copy()
+cols_proto = ["Protocol", "Classification", "Blockchain", "Pool",
+              "Wallet", "Token", "Token Balance", "USD Value"]
+df_protocols = pd.DataFrame(prot_rows, columns=cols_proto) 
+if "Blockchain" in df_protocols.columns:
+    df_protocols = df_protocols[df_protocols["Blockchain"].isin(sel_chains)].copy()
+else:
+    st.warning("⚠️ No protocol data returned from Debank – frame is empty.")
+    df_protocols = pd.DataFrame(columns=cols_proto)
 df_protocols["USD Value"]=pd.to_numeric(df_protocols["USD Value"],errors="coerce")
 df_protocols=df_protocols[df_protocols["USD Value"]>=1]                # filter <1
 # fetch + append off-chain balances
