@@ -1,5 +1,5 @@
 import streamlit as st, requests, pandas as pd, plotly.express as px, json, gspread
-import datetime
+import datetime import time
 from google.oauth2.service_account import Credentials
 from functools import lru_cache            
 
@@ -165,6 +165,17 @@ def md_table(df,cols):
     hdr="| "+" | ".join(cols)+" |"; sep="| "+" | ".join("---" for _ in cols)+" |"
     rows=["| "+" | ".join(str(r[c]) for c in cols)+" |" for _,r in df.iterrows()]
     return "\n".join([hdr,sep,*rows])
+# Simple retry helper – sleeps & retries on HTTP 429 / 5xx
+def _safe_get(url: str, params: dict, headers: dict, retries: int = 5):
+    for attempt in range(retries):
+        r = requests.get(url, params=params, headers=headers, timeout=15)
+        if r.status_code < 429 or attempt == retries - 1:
+            # success (2xx) or non-retryable / out-of-retries
+            return r
+        # hit rate-limit or temporary error → back-off & retry
+        sleep_for = 0.25 * (2 ** attempt)          # 0.25s, 0.5s, 1s, …
+        time.sleep(sleep_for)
+    return r   # last response (let caller decide what to do)
 def ensure_utc(ts: pd.Timestamp):
     return ts if ts.tzinfo else ts.tz_localize("UTC")
 @st.cache_data(ttl=600, show_spinner=False)
@@ -196,6 +207,21 @@ def load_wallet_snapshot(day: datetime.date) -> pd.DataFrame:
             "Wallet", "Chain", "Token",
             "Token Balance", "USD Value", "date"
         ])
+@st.cache_data(ttl=600, show_spinner=False)
+def debank_tokens_single(wallet: str, chain: str):
+    url = "https://pro-openapi.debank.com/v1/user/token_list"
+    r = _safe_get(url,
+                  {"id": wallet, "chain_id": chain, "is_all": False},
+                  headers)
+    return [] if r.status_code != 200 else r.json()
+
+@st.cache_data(ttl=600, show_spinner=False)
+def debank_protocols_single(wallet: str):
+    url = "https://pro-openapi.debank.com/v1/user/all_complex_protocol_list"
+    r = _safe_get(url,
+                  {"id": wallet, "chain_ids": ",".join(CHAIN_IDS)},
+                  headers)
+    return [] if r.status_code != 200 else r.json()
 
 # ───────────── Debank fetchers ─────────────
 @st.cache_data(ttl=600, show_spinner=False)
@@ -256,31 +282,48 @@ sel_wallets = WALLETS
 sel_chains  = st.sidebar.multiselect("Chains",  list(CHAIN_NAMES.values()), default=list(CHAIN_NAMES.values()))
 
 # ───────────── build dfs ─────────────
-wallet_rows=[]
+wallet_rows = []
 for w in sel_wallets:
-    for cid in CHAIN_IDS: wallet_rows+=fetch_tokens(w,cid)
+    for cid in CHAIN_IDS:
+        for t in debank_tokens_single(w, cid):
+            price, amt = t.get("price", 0), t.get("amount", 0)
+            if price <= 0:
+                continue
+            wallet_rows.append({
+                "Wallet": w,
+                "Chain": CHAIN_NAMES.get(cid, cid),
+                "Token": first_symbol(t),
+                "Token Balance": amt,
+                "USD Value": amt * price,
+            })
 
 df_wallets=pd.DataFrame(wallet_rows)
 df_wallets=df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
 df_wallets["USD Value"]=pd.to_numeric(df_wallets["USD Value"],errors="coerce")
 df_wallets=df_wallets[df_wallets["USD Value"]>=1]                      # filter <1
 
-prot_rows=[]
+prot_rows = []
 for w in sel_wallets:
-    for p in fetch_protocols(w):
-        for it in p.get("portfolio_item_list",[]):
-            desc=(it.get("detail") or {}).get("description") or ""
-            toks=(it.get("detail") or {}).get("supply_token_list",[])+\
-                 (it.get("detail") or {}).get("reward_token_list",[])
+    for p in debank_protocols_single(w):
+        for it in p.get("portfolio_item_list", []):
+            desc = (it.get("detail") or {}).get("description") or ""
+            toks = (it.get("detail") or {}).get("supply_token_list", []) + \
+                   (it.get("detail") or {}).get("reward_token_list", [])
             for t in toks:
-                price,amt=t.get("price",0),t.get("amount",0)
-                if price<=0: continue
+                price, amt = t.get("price", 0), t.get("amount", 0)
+                if price <= 0:
+                    continue
                 sym = desc if desc and not desc.startswith("#") else first_symbol(t)
-                prot_rows.append({"Protocol":p.get("name"),"Classification":it.get("name",""),
-                                  "Blockchain":CHAIN_NAMES.get(p.get("chain"),p.get("chain")),
-                                  "Pool": it.get("pool", {}).get("id", ""),
-                                  "Wallet":w,"Token":sym,
-                                  "Token Balance":amt,"USD Value":amt*price})
+                prot_rows.append({
+                    "Protocol":      p.get("name"),
+                    "Classification": it.get("name", ""),
+                    "Blockchain":    CHAIN_NAMES.get(p.get("chain"), p.get("chain")),
+                    "Pool":          it.get("pool", {}).get("id", ""),
+                    "Wallet":        w,
+                    "Token":         sym,
+                    "Token Balance": amt,
+                    "USD Value":     amt * price,
+                })
 df_protocols=pd.DataFrame(prot_rows)
 df_protocols=df_protocols[df_protocols["Blockchain"].isin(sel_chains)].copy()
 df_protocols["USD Value"]=pd.to_numeric(df_protocols["USD Value"],errors="coerce")
