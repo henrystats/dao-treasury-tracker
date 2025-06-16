@@ -1,5 +1,5 @@
 import streamlit as st, requests, pandas as pd, plotly.express as px, json, gspread
-import datetime, time
+import datetime, time, re
 from google.oauth2.service_account import Credentials
 from functools import lru_cache            
 
@@ -125,15 +125,49 @@ def _gc():
     )
     return gspread.authorize(creds)
 
-@st.cache_data(ttl=600)
-def load_wallets():
+ADDR_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")   # exactly 42-char EVM address
+
+@st.cache_data(ttl=600, show_spinner=False)
+def load_wallets() -> list[str]:
+    """
+    Read the “addresses” worksheet (col A) and return only well-formed
+    0x…40-hex-char addresses.
+
+    ── Behaviour ─────────────────────────────────────────────
+      • On Google-Sheets error → warn once and return [].
+      • On malformed rows     → warn with a short preview; bad rows are skipped.
+      • If no valid rows left → warn once and return [] (dashboard will still
+                                run, there’ll just be no on-chain data).
+    """
+    # 1) pull the raw column values
     try:
-        ws=_gc().open_by_key(SHEET_ID).worksheet("addresses")
-        vals=[v.strip() for v in ws.col_values(1) if v.strip().startswith("0x")]
-        return vals or ["0xf40bcc0845528873784F36e5C105E62a93ff7021"]
+        ws   = _gc().open_by_key(SHEET_ID).worksheet("addresses")
+        raw  = [v.strip() for v in ws.col_values(1)]
     except Exception as e:
-        st.warning(f"⚠️ Sheets fetch failed, using fallback wallet. ({e})")
-        return ["0xf40bcc0845528873784F36e5C105E62a93ff7021"]
+        st.warning(f"⚠️ Unable to read the *addresses* sheet – {e}")
+        return []
+
+    # 2) separate good vs. bad rows
+    good = [a for a in raw if ADDR_RE.fullmatch(a)]
+    bad  = [a for a in raw if a and a.startswith("0x") and not ADDR_RE.fullmatch(a)]
+
+    if bad:
+        preview = ", ".join(bad[:3]) + ("…" if len(bad) > 3 else "")
+        st.warning(f"⚠️ Ignored {len(bad)} malformed address(es): {preview}")
+
+    if not good:
+        st.warning("⚠️ No valid wallet addresses found in the sheet.")
+    return good
+
+# @st.cache_data(ttl=600)
+# def load_wallets():
+#     try:
+#         ws=_gc().open_by_key(SHEET_ID).worksheet("addresses")
+#         vals=[v.strip() for v in ws.col_values(1) if v.strip().startswith("0x")]
+#         return vals or ["0xf40bcc0845528873784F36e5C105E62a93ff7021"]
+#     except Exception as e:
+#         st.warning(f"⚠️ Sheets fetch failed, using fallback wallet. ({e})")
+#         return ["0xf40bcc0845528873784F36e5C105E62a93ff7021"]
 
 WALLETS = load_wallets()
 
