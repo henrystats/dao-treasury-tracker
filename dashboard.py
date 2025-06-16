@@ -508,6 +508,8 @@ if not hist.empty:
         p["usd_value"]=pd.to_numeric(p["usd_value"],errors="coerce").fillna(0)
         top=p.groupby("name")["usd_value"].last().nlargest(10).index
         p.loc[~p["name"].isin(top),"name"]="Others"
+        p = (p.groupby(["day", "name"], as_index=False)    
+               .agg({"usd_value": "sum"})) 
         fig_p = px.area(
             p, x="day", y="usd_value", color="name",
             color_discrete_map=COLOR_JSON                          
