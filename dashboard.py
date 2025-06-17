@@ -556,7 +556,7 @@ if not df_protocols.empty or not df_wallets.empty:
         names="protocol",
         values="usd",
         hole=.4,
-        color_discrete_map=explicit_map,
+        color_discrete_map=colour_map,
     )
     fig_proto.update_traces(
         texttemplate="%{label}<br>%{percent}<br>%{customdata}",
