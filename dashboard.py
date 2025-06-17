@@ -705,7 +705,8 @@ if not df_wallets_view.empty:
             df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
             df = (df.sort_values("timestamp", ascending=False)
                     .groupby(["Wallet", "Token"], as_index=False)
-                    .first())
+                    .first()
+                    .sort_values("USD Value", ascending=False))
     
         df["Token Balance"] = df["Token Balance"].apply(lambda x: f"{x:,.4f}")
         df["Wallet"] = df["Wallet"].apply(link_wallet)
