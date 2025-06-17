@@ -542,13 +542,17 @@ if not df_protocols.empty or not df_wallets.empty:
     if proto_sum.size > 5:
         top5.loc["Others"] = proto_sum.iloc[5:].sum()
     proto_df = top5.reset_index()
-    proto_df.columns = ["protocol", "usd"]       # ← robust rename
+    proto_df.columns = ["protocol", "usd"]       
+    present = proto_df["protocol"].tolist()
+    explicit_map = {p: COLOR_JSON[p]          
+                    for p in present
+                    if p in COLOR_JSON}
     fig_proto = px.pie(
         proto_df,
         names="protocol",
         values="usd",
         hole=.4,
-        color_discrete_sequence=[COLOR_JSON.get(p, "#ccc") for p in proto_df["protocol"]]
+        color_discrete_map=explicit_map,
     )
     fig_proto.update_traces(
         texttemplate="%{label}<br>%{percent}<br>%{customdata}",
