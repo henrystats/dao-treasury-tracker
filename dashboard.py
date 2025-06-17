@@ -100,7 +100,7 @@ PROTOCOL_LOGOS = {
 COLOR_JSON = {
     "Ethereum":"#627EEA","Arbitrum":"#28A0F0","Base":"#0052FF","Scroll":"#FEDA03",
     "Curve":"#FF007A","Aave":"#B6509E","Lido":"#00A3FF","Aerodrome":"#1AAB9B",
-    "ether.fi":"#800DEE","Aave V3":"#B6509E",
+    "ether.fi":"#800DEE","Aave V3":"#B6509E","ETH":"#627EEA","Stables":"#2775ca",
 }
 BLOCKCHAIN_LOGOS = {
     "Optimism"  : "https://static.debank.com/image/chain/logo_url/op/68bef0c9f75488f4e302805ef9c8fc84.png",
@@ -204,11 +204,35 @@ def dune_prices() -> dict:
 def first_symbol(t): return t.get("optimized_symbol") or t.get("display_symbol") or t.get("symbol")
 def link_wallet(a):  return f"[{a[:6]}…{a[-4:]}](https://debank.com/profile/{a})"
 def fmt_usd(v):      return f"${v/1e6:.2f}M" if v>=1e6 else f"${v/1e3:.1f}K" if v>=1e3 else f"${v:,.0f}"
-def token_category(tok:str):
-    T=tok.upper()
-    if "ETH" in T: return "ETH"
-    if any(k in T for k in ("USDC","USDT","DAI","USDE")): return "Stables"
+# ───────────── NEW: token-category lookup ─────────────
+@st.cache_data(ttl=600, show_spinner=False)
+def load_token_categories() -> dict[str, str]:
+    """
+    Read the *token_category* sheet (col A = keyword, col B = category)
+    and return a mapping { keyword_lower : CategoryName }.
+    """
+    try:
+        ws   = _gc().open_by_key(SHEET_ID).worksheet("token_category")
+        rows = [tuple(map(str.strip, r[:2]))
+                for r in ws.get_all_values() if r and r[0].strip()]
+        return {k.lower(): v for k, v in rows if v}
+    except Exception as e:
+        st.warning(f"⚠️ Unable to read *token_category* sheet – {e}")
+        return {}
+
+TOKEN_CATS = load_token_categories()
+
+def token_category(tok: str) -> str:
+    """
+    Map a token symbol → Category using the sheet-driven rules above.
+    Falls back to 'Others'.
+    """
+    symbol = tok.lower()
+    for kw, cat in TOKEN_CATS.items():          # first match wins
+        if kw in symbol:
+            return cat
     return "Others"
+
 def md_table(df,cols):
     hdr="| "+" | ".join(cols)+" |"; sep="| "+" | ".join("---" for _ in cols)+" |"
     rows=["| "+" | ".join(str(r[c]) for c in cols)+" |" for _,r in df.iterrows()]
