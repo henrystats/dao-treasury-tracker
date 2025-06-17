@@ -1,7 +1,15 @@
 import streamlit as st, requests, pandas as pd, plotly.express as px, json, gspread
-import datetime, time, re
+import datetime, time, re, requests_cache
 from google.oauth2.service_account import Credentials
-from functools import lru_cache            
+from functools import lru_cache  
+
+requests_cache.install_cache(
+    "debank_cache",                                
+    expire_after = datetime.timedelta(minutes=15), 
+    allowable_methods = ("GET",),                  
+    allowable_codes   = (200,),                   
+    cache_control     = True,                     
+)
 
 # ───────────────────────── CONFIG ────────────────────────────
 st.set_page_config(page_title="DeFi Treasury Tracker", layout="wide")
@@ -190,7 +198,7 @@ def md_table(df,cols):
     rows=["| "+" | ".join(str(r[c]) for c in cols)+" |" for _,r in df.iterrows()]
     return "\n".join([hdr,sep,*rows])
 # Simple retry helper – sleeps & retries on HTTP 429 / 5xx
-def _safe_get(url: str, params: dict, headers: dict, retries: int = 5):
+def _safe_get(url: str, params: dict, headers: dict, retries: int = 3):
     for attempt in range(retries):
         r = requests.get(url, params=params, headers=headers, timeout=15)
         if r.status_code < 429 or attempt == retries - 1:
