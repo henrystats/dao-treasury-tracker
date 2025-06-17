@@ -238,7 +238,14 @@ def debank_tokens_single(wallet: str, chain: str):
     r = _safe_get(url,
                   {"id": wallet, "chain_id": chain, "is_all": False},
                   headers)
-    return [] if r.status_code != 200 else r.json()
+    if r.status_code != 200:
+        st.warning(
+            f"Debank {wallet[:6]}…{wallet[-4:]}: "
+            f"{r.status_code} – {r.text[:120]}"
+        )
+        return []                     # keep existing “empty list” fallback
+
+    return r.json()
 
 @st.cache_data(ttl=600, show_spinner=False)
 def debank_protocols_single(wallet: str):
@@ -246,7 +253,14 @@ def debank_protocols_single(wallet: str):
     r = _safe_get(url,
                   {"id": wallet, "chain_ids": ",".join(CHAIN_IDS)},
                   headers)
-    return [] if r.status_code != 200 else r.json()
+    if r.status_code != 200:
+        st.warning(
+            f"Debank {wallet[:6]}…{wallet[-4:]}: "
+            f"{r.status_code} – {r.text[:120]}"
+        )
+        return []                     # keep existing “empty list” fallback
+
+    return r.json()
 
 # ───────────── Debank fetchers ─────────────
 @st.cache_data(ttl=600, show_spinner=False)
