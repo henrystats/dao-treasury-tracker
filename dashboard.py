@@ -707,6 +707,7 @@ if not df_wallets_view.empty:
                     .groupby(["Wallet", "Token"], as_index=False)
                     .first()
                     .sort_values("USD Value", ascending=False))
+        df = df.sort_values("USD Value", ascending=False)
     
         df["Token Balance"] = df["Token Balance"].apply(lambda x: f"{x:,.4f}")
         df["Wallet"] = df["Wallet"].apply(link_wallet)
