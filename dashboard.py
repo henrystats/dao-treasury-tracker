@@ -239,55 +239,61 @@ def load_wallet_snapshot(day: datetime.date) -> pd.DataFrame:
             "Wallet", "Chain", "Token",
             "Token Balance", "USD Value", "date"
         ])
+
+# ───────── Debank ONE-CALL helpers ──────────
 @st.cache_data(ttl=600, show_spinner=False)
-def debank_tokens_single(wallet: str, chain: str):
-    url = "https://pro-openapi.debank.com/v1/user/token_list"
-    r = _safe_get(url,
-                  {"id": wallet, "chain_id": chain, "is_all": False},
-                  headers)
+def debank_all_tokens(wallet: str) -> list[dict]:
+    url = "https://pro-openapi.debank.com/v1/user/all_token_list"
+    r   = _safe_get(
+            url,
+            {"id": wallet,
+             "chain_ids": ",".join(CHAIN_IDS),   
+             "is_all": False},                   
+            headers,
+          )
+
     if r.status_code != 200:
         st.warning(
-            f"Debank {wallet[:6]}…{wallet[-4:]}: "
-            f"{r.status_code} – {r.text[:120]}"
+            f"Debank {wallet[:6]}…{wallet[-4:]} all_token_list: "
+            f"{r.status_code} – {r.text[:100]}"
         )
-        return []                     # keep existing “empty list” fallback
+        return []
 
-    return r.json()
+    rows = []
+    for t in r.json():                           
+        price, amt = t.get("price", 0), t.get("amount", 0)
+        if price <= 0:
+            continue
+
+        chain_id = t.get("chain") or t.get("chain_id")
+        rows.append({
+            "Wallet":        wallet,
+            "Chain":         CHAIN_NAMES.get(chain_id, chain_id),
+            "Token":         first_symbol(t),
+            "Token Balance": amt,
+            "USD Value":     amt * price,
+        })
+    return rows
+
 
 @st.cache_data(ttl=600, show_spinner=False)
-def debank_protocols_single(wallet: str):
+def debank_all_protocols(wallet: str) -> list[dict]:
     url = "https://pro-openapi.debank.com/v1/user/all_complex_protocol_list"
-    r = _safe_get(url,
-                  {"id": wallet, "chain_ids": ",".join(CHAIN_IDS)},
-                  headers)
+    r   = _safe_get(
+            url,
+            {"id": wallet, "chain_ids": ",".join(CHAIN_IDS)},
+            headers,
+          )
+
     if r.status_code != 200:
         st.warning(
-            f"Debank {wallet[:6]}…{wallet[-4:]}: "
-            f"{r.status_code} – {r.text[:120]}"
+            f"Debank {wallet[:6]}…{wallet[-4:]} complex_protocol_list: "
+            f"{r.status_code} – {r.text[:100]}"
         )
-        return []                     # keep existing “empty list” fallback
+        return []
 
     return r.json()
 
-# ───────────── Debank fetchers ─────────────
-@st.cache_data(ttl=600, show_spinner=False)
-def fetch_tokens(wallet,chain):
-    url="https://pro-openapi.debank.com/v1/user/token_list"
-    r=requests.get(url,params={"id":wallet,"chain_id":chain,"is_all":False},headers=headers)
-    if r.status_code!=200: return []
-    out=[]
-    for t in r.json():
-        price,amt=t.get("price",0),t.get("amount",0)
-        if price<=0: continue
-        out.append({"Wallet":wallet,"Chain":CHAIN_NAMES.get(chain,chain),
-                    "Token":first_symbol(t),"Token Balance":amt,"USD Value":amt*price})
-    return out
-
-@st.cache_data(ttl=600, show_spinner=False)
-def fetch_protocols(wallet):
-    url="https://pro-openapi.debank.com/v1/user/all_complex_protocol_list"
-    r=requests.get(url,params={"id":wallet,"chain_ids":",".join(CHAIN_IDS)},headers=headers)
-    return r.json() if r.status_code==200 else []
 
 # ───────────── off-chain sheet fetcher ─────────────
 @st.cache_data(ttl=600, show_spinner=False)
@@ -330,21 +336,14 @@ sel_chains  = st.sidebar.multiselect("Chains",  list(CHAIN_NAMES.values()), defa
 # ───────────── build dfs ─────────────
 wallet_rows = []
 for w in sel_wallets:
-    for cid in CHAIN_IDS:
-        for t in debank_tokens_single(w, cid):
-            price, amt = t.get("price", 0), t.get("amount", 0)
-            if price <= 0:
-                continue
-            wallet_rows.append({
-                "Wallet": w,
-                "Chain": CHAIN_NAMES.get(cid, cid),
-                "Token": first_symbol(t),
-                "Token Balance": amt,
-                "USD Value": amt * price,
-            })
+    wallet_rows += debank_all_tokens(w)
 
-cols = ["Wallet", "Chain", "Token", "Token Balance", "USD Value"]
-df_wallets = pd.DataFrame(wallet_rows, columns=cols)
+cols_wallet = ["Wallet", "Chain", "Token", "Token Balance", "USD Value"]
+df_wallets  = pd.DataFrame(wallet_rows, columns=cols_wallet)
+
+df_wallets = df_wallets[df_wallets["Chain"].isin(sel_chains)].copy()
+df_wallets["USD Value"] = pd.to_numeric(df_wallets["USD Value"], errors="coerce")
+df_wallets = df_wallets[df_wallets["USD Value"] >= 1]
 
 # If no rows were returned, warn once
 if "Chain" in df_wallets.columns:
@@ -360,7 +359,7 @@ df_wallets = df_wallets[df_wallets["USD Value"] >= 1]      # drop rows < $1     
 
 prot_rows = []
 for w in sel_wallets:
-    for p in debank_protocols_single(w):
+    for p in debank_all_protocols(w):
         for it in p.get("portfolio_item_list", []):
             desc = (it.get("detail") or {}).get("description") or ""
             toks = (it.get("detail") or {}).get("supply_token_list", []) + \
