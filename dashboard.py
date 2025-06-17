@@ -160,7 +160,6 @@ def load_wallets() -> list[str]:
     return good
 
 WALLETS = load_wallets()
-st.write("DEBUG wallets:", WALLETS)
 
 # ───────────── Dune helpers ─────────────
 @lru_cache(maxsize=1)                      # cache for this run
