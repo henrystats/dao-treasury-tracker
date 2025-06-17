@@ -1,5 +1,5 @@
 import streamlit as st, requests, pandas as pd, plotly.express as px, json, gspread
-import datetime, time, re, requests_cache
+import datetime, time, re, requests_cache, itertools
 from google.oauth2.service_account import Credentials
 from functools import lru_cache  
 
@@ -544,9 +544,13 @@ if not df_protocols.empty or not df_wallets.empty:
     proto_df = top5.reset_index()
     proto_df.columns = ["protocol", "usd"]       
     present = proto_df["protocol"].tolist()
-    explicit_map = {p: COLOR_JSON[p]          
+    colour_map = {p: COLOR_JSON[p]          
                     for p in present
                     if p in COLOR_JSON}
+    fallback_cycle = itertools.cycle(px.colors.qualitative.Plotly)
+    for p in present:
+        if p not in colour_map:
+            colour_map[p] = next(fallback_cycle)
     fig_proto = px.pie(
         proto_df,
         names="protocol",
