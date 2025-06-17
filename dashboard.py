@@ -555,6 +555,7 @@ if not df_protocols.empty or not df_wallets.empty:
         proto_df,
         names="protocol",
         values="usd",
+        color="protocol",
         hole=.4,
         color_discrete_map=colour_map,
     )
