@@ -103,10 +103,26 @@ COLOR_JSON = {
     "ether.fi":"#800DEE","Aave V3":"#B6509E",
 }
 BLOCKCHAIN_LOGOS = {
-    "Ethereum": "https://static.debank.com/image/coin/logo_url/eth/6443cdccced33e204d90cb723c632917.png",
-    "Arbitrum": "https://static.debank.com/image/arb_token/logo_url/0x912ce59144191c1204e64559fe8253a0e49e6548/7623afc27299327fdb0b090fd67e8ff4.png",
-    "Base":      "https://static.debank.com/image/project/logo_url/base/ba1672b3537195839d1eed6f60c89bdc.png",
-    "Scroll":    "https://static.debank.com/image/scrl_token/logo_url/0xd29687c813d741e2f938f4ac377128810e217b1b/0eabb4976c99ba1e66fdb9b3e5139dcf.png",
+    "Optimism"  : "https://static.debank.com/image/chain/logo_url/op/68bef0c9f75488f4e302805ef9c8fc84.png",
+    "Arbitrum"  : "https://static.debank.com/image/chain/logo_url/arb/854f629937ce94bebeb2cd38fb336de7.png",
+    "BNB Chain" : "https://static.debank.com/image/chain/logo_url/bsc/bc73fa84b7fc5337905e527dadcbc854.png",
+    "Ethereum"  : "https://static.debank.com/image/chain/logo_url/eth/42ba589cd077e7bdd97db6480b0ff61d.png",
+    "Base"      : "https://static.debank.com/image/chain/logo_url/base/ccc1513e4f390542c4fb2f4b88ce9579.png",
+    "Berachain" : "https://static.debank.com/image/chain/logo_url/bera/89db55160bb8bbb19464cabf17e465bc.png",
+    "Celo"      : "https://static.debank.com/image/chain/logo_url/celo/faae2c36714d55db1d7a36aba5868f6a.png",
+    "MobileCoin": "https://static.debank.com/image/chain/logo_url/mobm/fcfe3dee0e55171580545cf4d4940257.png",   # mobm
+    "Scroll"    : "https://static.debank.com/image/chain/logo_url/scrl/1fa5c7e0bfd353ed0a97c1476c9c42d2.png",
+    "Gnosis"    : "https://static.debank.com/image/chain/logo_url/xdai/43c1e09e93e68c9f0f3b132976394529.png",   # xdai
+    "Blast"     : "https://static.debank.com/image/chain/logo_url/blast/15132294afd38ce980639a381ee30149.png",
+    "Linea"     : "https://static.debank.com/image/chain/logo_url/linea/32d4ff2cf92c766ace975559c232179c.png",
+    "Polygon"   : "https://static.debank.com/image/chain/logo_url/matic/52ca152c08831e4765506c9bd75767e8.png",
+    "zkSync Era": "https://static.debank.com/image/chain/logo_url/era/2cfcd0c8436b05d811b03935f6c1d7da.png",
+    "Fantom"    : "https://static.debank.com/image/chain/logo_url/ftm/14133435f89637157a4405e954e1b1b2.png",
+    "Proof-of-Play Zealy": "https://static.debank.com/image/chain/logo_url/pze/a2276dce2d6a200c6148fb975f0eadd3.png",  # pze
+    "Avalanche" : "https://static.debank.com/image/chain/logo_url/avax/4d1649e8a0c7dec9de3491b81807d402.png",
+    "Corn"      : "https://static.debank.com/image/chain/logo_url/corn/2ac7405fee5fdeee5964ba0bcf2216f4.png",
+    "Klaytn"    : "https://static.debank.com/image/chain/logo_url/klay/4182ee077031d843a57e42746c30c072.png",
+    "Mode"      : "https://static.debank.com/image/chain/logo_url/mode/466e6e12f4fd827f8f497cceb0601a5e.png",
 }
 
 # ──────── CSS for fixed-width tables ────────
