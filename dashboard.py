@@ -688,7 +688,15 @@ if not df_wallets_view.empty:
         st.markdown("---")
     
     else:
-        df = df_filtered.sort_values("USD Value", ascending=False).copy()
+        df = df_filtered.copy()
+        if "timestamp" in df.columns:
+            df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+            df = (df.sort_values("timestamp", ascending=False)
+                    .groupby(["Wallet", "Token"], as_index=False)
+                    .first())
+            
+        df = df.sort_values("USD Value", ascending=False)
+
         csv_df = df.rename(
             columns={
                 "Wallet":        "full_address",
@@ -700,14 +708,6 @@ if not df_wallets_view.empty:
         )
         csv_df["date"] = snap_date.strftime("%d-%m-%Y")
         df["USD Value"] = df["USD Value"].apply(fmt_usd)
-    
-        if "timestamp" in df.columns:
-            df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-            df = (df.sort_values("timestamp", ascending=False)
-                    .groupby(["Wallet", "Token"], as_index=False)
-                    .first()
-                    .sort_values("USD Value", ascending=False))
-    
         df["Token Balance"] = df["Token Balance"].apply(lambda x: f"{x:,.4f}")
         df["Wallet"] = df["Wallet"].apply(link_wallet)
         df["Token"]  = df.apply(
