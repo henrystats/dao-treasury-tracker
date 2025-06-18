@@ -275,8 +275,6 @@ def load_wallet_snapshot(day: datetime.date) -> pd.DataFrame:
         df = (df.sort_values("timestamp", ascending=False)
                 .groupby(["Wallet", "Chain", "Token"], as_index=False)   
                 .first())
-        # df = (df.sort_values(["Wallet", "Chain", "Token"])
-        #         .drop_duplicates(subset=["Wallet", "Chain", "Token"], keep="first"))
 
         return df
     except Exception:
@@ -700,11 +698,6 @@ if not df_wallets_view.empty:
                                  ascending=[True,   True,    True,     False])
                     .drop_duplicates(subset=["Wallet", "Chain", "Token"], keep="first"))
 
-        # if "timestamp" in df.columns:
-        #     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-        #     df = (df.sort_values("timestamp", ascending=False)
-        #             .groupby(["Wallet", "Token"], as_index=False)
-        #             .first())
             
         df = df.sort_values("USD Value", ascending=False)
 
