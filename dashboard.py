@@ -269,10 +269,12 @@ def load_wallet_snapshot(day: datetime.date) -> pd.DataFrame:
         })
         df["USD Value"] = pd.to_numeric(df["USD Value"], errors="coerce")
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-        
-        df = (df.sort_values("timestamp", ascending=False)        # newest first
-                .groupby(["Wallet", "Token"], as_index=False)
-                .first())                                         # keep latest
+
+        last_ts = df["timestamp"].max()
+        df = df[df["timestamp"] == last_ts].copy()
+        df = (df.sort_values(["Wallet", "Chain", "Token"])
+                .drop_duplicates(subset=["Wallet", "Chain", "Token"], keep="first"))
+
         return df
     except Exception:
         return pd.DataFrame(columns=[
