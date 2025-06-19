@@ -457,6 +457,8 @@ def write_snapshot():
     cat_sum=(combined.assign(cat=combined["Token"].map(token_category))
                     .groupby("cat")["USD Value"].sum())
     rows += [[hour,"token",c,round(v,2)] for c,v in cat_sum.items()]
+    rows.append([hour, "protocol", "Wallet Balances",
+             round(df_wallets["USD Value"].sum(), 2)])
     # ─── snapshot wallet balances ───────────────────────────────
     try:
         wb_ws = sh.worksheet(WALLET_SHEET)
