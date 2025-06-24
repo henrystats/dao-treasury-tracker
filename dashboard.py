@@ -136,8 +136,8 @@ th,td {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* new column widths – order: Wallet | Chain | Token | Token Balance | USD Value */
 th:nth-child(1), td:nth-child(1) {width:15%}   /* Wallet  */
 th:nth-child(2), td:nth-child(2) {width:15%}   /* Chain   */
-th:nth-child(3), td:nth-child(3) {width:40%}   /* Token   */
-th:nth-child(4), td:nth-child(4) {width:20%}   /* Token Balance */
+th:nth-child(3), td:nth-child(3) {width:35%}   /* Token   */
+th:nth-child(4), td:nth-child(4) {width:25%}   /* Token Balance */
 th:nth-child(5), td:nth-child(5) {width:10%}   /* USD Value */
 
 </style>""", unsafe_allow_html=True)
