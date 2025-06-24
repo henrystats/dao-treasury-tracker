@@ -204,7 +204,7 @@ def dune_prices() -> dict:
 def first_symbol(t): return t.get("optimized_symbol") or t.get("display_symbol") or t.get("symbol")
 def link_wallet(a):  return f"[{a[:6]}…{a[-4:]}](https://debank.com/profile/{a})"
 def fmt_usd(v: float) -> str:
-    sign = "-" if v < 0 else ""          # U+2011 non-breaking hyphen looks nicer; a plain "-" works too
+    sign = "-" if v < 0 else ""          
     v = abs(v)
     if v >= 1e6:
         return f"{sign}${v/1e6:.2f}M"
@@ -212,7 +212,6 @@ def fmt_usd(v: float) -> str:
         return f"{sign}${v/1e3:.1f}K"
     return     f"{sign}${v:,.0f}"
 
-# def fmt_usd(v):      return f"${v/1e6:.2f}M" if v>=1e6 else f"${v/1e3:.1f}K" if v>=1e3 else f"${v:,.0f}"
 # ───────────── NEW: token-category lookup ─────────────
 @st.cache_data(ttl=600, show_spinner=False)
 def load_token_categories() -> dict[str, str]:
