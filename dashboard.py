@@ -423,8 +423,6 @@ for w in sel_wallets:
                     for bt in detail.get("borrow_token_list", [])
                 ]
             )
-            # toks = (it.get("detail") or {}).get("supply_token_list", []) + \
-            #        (it.get("detail") or {}).get("reward_token_list", [])
             for t in toks:
                 price, amt = t.get("price", 0), t.get("amount", 0)
                 if price <= 0:
@@ -450,7 +448,6 @@ else:
     df_protocols = pd.DataFrame(columns=cols_proto)
 df_protocols["USD Value"]=pd.to_numeric(df_protocols["USD Value"],errors="coerce")
 df_protocols = df_protocols[abs(df_protocols["USD Value"]) >= 1]
-# df_protocols=df_protocols[df_protocols["USD Value"]>=1]                # filter <1
 # fetch + append off-chain balances
 df_offchain   = fetch_offchain()
 df_protocols  = pd.concat([df_protocols, df_offchain], ignore_index=True)
@@ -757,18 +754,7 @@ else:
 st.markdown("---")   # separator before protocol section
 
 # ───────────── protocol positions table ─────────────
-info_col, header_col = st.columns([1, 20])
-
-with info_col:
-    st.button(
-        "❓",                              
-        key="lend_help",                   
-        help="Supply & reward amounts are **positive**; borrowed amounts are **negative**.",
-        disabled=True,                     
-    )
-
-with header_col:
-    st.subheader("🏦 DeFi Protocol Positions")
+st.subheader("🏦 DeFi Protocol Positions")
 if not df_protocols.empty:
     dfp=df_protocols.copy()
     dfp_raw = df_protocols.copy()
