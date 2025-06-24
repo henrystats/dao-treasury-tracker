@@ -203,7 +203,16 @@ def dune_prices() -> dict:
 # ───────────── helpers ─────────────
 def first_symbol(t): return t.get("optimized_symbol") or t.get("display_symbol") or t.get("symbol")
 def link_wallet(a):  return f"[{a[:6]}…{a[-4:]}](https://debank.com/profile/{a})"
-def fmt_usd(v):      return f"${v/1e6:.2f}M" if v>=1e6 else f"${v/1e3:.1f}K" if v>=1e3 else f"${v:,.0f}"
+def fmt_usd(v: float) -> str:
+    sign = "-" if v < 0 else ""          # U+2011 non-breaking hyphen looks nicer; a plain "-" works too
+    v = abs(v)
+    if v >= 1e6:
+        return f"{sign}${v/1e6:.2f}M"
+    if v >= 1e3:
+        return f"{sign}${v/1e3:.1f}K"
+    return     f"{sign}${v:,.0f}"
+
+# def fmt_usd(v):      return f"${v/1e6:.2f}M" if v>=1e6 else f"${v/1e3:.1f}K" if v>=1e3 else f"${v:,.0f}"
 # ───────────── NEW: token-category lookup ─────────────
 @st.cache_data(ttl=600, show_spinner=False)
 def load_token_categories() -> dict[str, str]:
@@ -405,8 +414,17 @@ for w in sel_wallets:
     for p in debank_all_protocols(w):
         for it in p.get("portfolio_item_list", []):
             desc = (it.get("detail") or {}).get("description") or ""
-            toks = (it.get("detail") or {}).get("supply_token_list", []) + \
-                   (it.get("detail") or {}).get("reward_token_list", [])
+            detail = it.get("detail") or {}
+            toks   = (
+                detail.get("supply_token_list", []) +      # ← supply
+                detail.get("reward_token_list", []) +      # ← rewards
+                [
+                    {**bt, "amount": -bt.get("amount", 0)} # ← borrow  ➜ negate amount
+                    for bt in detail.get("borrow_token_list", [])
+                ]
+            )
+            # toks = (it.get("detail") or {}).get("supply_token_list", []) + \
+            #        (it.get("detail") or {}).get("reward_token_list", [])
             for t in toks:
                 price, amt = t.get("price", 0), t.get("amount", 0)
                 if price <= 0:
@@ -431,7 +449,8 @@ else:
     st.warning("⚠️ No protocol data returned from Debank – frame is empty.")
     df_protocols = pd.DataFrame(columns=cols_proto)
 df_protocols["USD Value"]=pd.to_numeric(df_protocols["USD Value"],errors="coerce")
-df_protocols=df_protocols[df_protocols["USD Value"]>=1]                # filter <1
+df_protocols = df_protocols[abs(df_protocols["USD Value"]) >= 1]
+# df_protocols=df_protocols[df_protocols["USD Value"]>=1]                # filter <1
 # fetch + append off-chain balances
 df_offchain   = fetch_offchain()
 df_protocols  = pd.concat([df_protocols, df_offchain], ignore_index=True)
