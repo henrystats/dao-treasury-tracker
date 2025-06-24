@@ -757,7 +757,18 @@ else:
 st.markdown("---")   # separator before protocol section
 
 # ───────────── protocol positions table ─────────────
-st.subheader("🏦 DeFi Protocol Positions")
+info_col, header_col = st.columns([1, 20])
+
+with info_col:
+    st.button(
+        "❓",                              
+        key="lend_help",                   
+        help="Supply & reward amounts are **positive**; borrowed amounts are **negative**.",
+        disabled=True,                     
+    )
+
+with header_col:
+    st.subheader("🏦 DeFi Protocol Positions")
 if not df_protocols.empty:
     dfp=df_protocols.copy()
     dfp_raw = df_protocols.copy()
