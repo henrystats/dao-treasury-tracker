@@ -98,9 +98,9 @@ PROTOCOL_LOGOS = {
     "Yearn V2":          "https://static.debank.com/image/project/logo_url/yearn2/b0f88529a907964dbbf154337906db19.png",
 }
 COLOR_JSON = {
-    "Ethereum":"#627EEA","Arbitrum":"#28A0F0","Base":"#0052FF","Scroll":"#FEDA03",
-    "Curve":"#FF007A","Aave":"#B6509E","Lido":"#00A3FF","Aerodrome":"#1AAB9B",
-    "ether.fi":"#800DEE","Aave V3":"#B6509E","ETH":"#627EEA","Stables":"#2775ca",
+    "Ethereum":"#627EEA","Arbitrum":"#28A0F0","Base":"#0052FF","Scroll":"#FEDA03","Katana":"#F6FF09","SwellChain":"#2f43ec",
+    "Curve":"#FF007A","Aave":"#B6509E","Lido":"#4DB0F2","Aerodrome":"#1AAB9B",
+    "ether.fi":"#800DEE","Aave V3":"#B6509E","ETH":"#627EEA","Stables":"#2775ca","Uniswap V3":"#F50DB4",
 }
 BLOCKCHAIN_LOGOS = {
     "Optimism"  : "https://static.debank.com/image/chain/logo_url/op/68bef0c9f75488f4e302805ef9c8fc84.png",
@@ -123,6 +123,9 @@ BLOCKCHAIN_LOGOS = {
     "Corn"      : "https://static.debank.com/image/chain/logo_url/corn/2ac7405fee5fdeee5964ba0bcf2216f4.png",
     "Klaytn"    : "https://static.debank.com/image/chain/logo_url/klay/4182ee077031d843a57e42746c30c072.png",
     "Mode"      : "https://static.debank.com/image/chain/logo_url/mode/466e6e12f4fd827f8f497cceb0601a5e.png",
+    "Katana"    : "https://static.debank.com/image/chain/logo_url/katana/0202d6aecd963a9c0b2afb56c4d731b5.png",
+    "Plasma"    : "https://static.debank.com/image/chain/logo_url/plasma/baafefce3b9d43b12b0c016f30aff140.png",
+    "SwellChain": "https://static.debank.com/image/chain/logo_url/swell/3e98b1f206af5f2c0c2cc4d271ee1070.png",
 }
 
 # ──────── CSS for fixed-width tables ────────
