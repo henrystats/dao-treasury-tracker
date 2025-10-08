@@ -12,18 +12,18 @@ requests_cache.install_cache(
 )
 
 # ───────────────────────── CONFIG ────────────────────────────
-st.set_page_config(page_title="DeFi Treasury Tracker", layout="wide")
-st.title("📊 DeFi Treasury Tracker")
+st.set_page_config(page_title="liquidETH Vault Positions", layout="wide")
+st.title("📊 liquidETH Vault Positions")
 
 ACCESS_KEY = st.secrets["ACCESS_KEY"]
 SHEET_ID   = st.secrets["sheet_id"]
-WALLET_SHEET = "wallet_balances"       
+WALLET_SHEET = "liquid_vaults_wallet_balances"       
 SA_INFO    = json.loads(st.secrets["gcp_service_account"])
 
-CHAIN_IDS   = ["eth", "arb", "base", "scrl", "avax", "era", "bsc", "op", "linea", "corn", "zircuit", "bera", "blast", "swell", "uni", "sonic", "hyper"]
+CHAIN_IDS   = ["eth", "arb", "base", "scrl", "avax", "era", "bsc", "op", "linea", "corn", "zircuit", "bera", "blast", "swell", "uni", "sonic", "hyper","katana","plasma"]
 CHAIN_NAMES = {"eth":"Ethereum","arb":"Arbitrum","base":"Base","scrl":"Scroll","avax":"Avalanche","era":"zkSync Era","bsc":"BNB Chain","op":"Optimism",
                 "linea":"Linea","corn":"Corn","zircuit":"Zircuit","bera":"Berachain","blast":"Blast","swell":"SwellChain","uni":"Unichain",
-               "sonic":"Sonic","hyper":"Hyperliquid"
+               "sonic":"Sonic","hyper":"Hyperliquid","katana":"Katana","plasma":"Plasma"
             }
 headers     = {"AccessKey": ACCESS_KEY}
 
@@ -355,7 +355,7 @@ def fetch_offchain() -> pd.DataFrame:
     Convert it to the same shape as df_protocols.
     """
     try:
-        ws  = _gc().open_by_key(SHEET_ID).worksheet("offchain")
+        ws  = _gc().open_by_key(SHEET_ID).worksheet("liquid_vaults_offchain")
         df  = pd.DataFrame(ws.get_all_records())
         if df.empty:
             return pd.DataFrame(columns=df_protocols.columns)  # placeholder
@@ -456,7 +456,7 @@ def write_snapshot():
     if df_protocols.empty and df_wallets.empty: return
     hour=datetime.datetime.utcnow().replace(minute=0,second=0,microsecond=0).isoformat()
     gc=_gc(); sh=gc.open_by_key(SHEET_ID)
-    try: ws=sh.worksheet("history")
+    try: ws=sh.worksheet("liquid_vaults_history")
     except gspread.WorksheetNotFound:
         ws=sh.add_worksheet("history",rows=2,cols=4)
         ws.append_row(["timestamp","history_type","name","usd_value"])
@@ -526,7 +526,7 @@ readable = "just now" if elapsed < 60 else f"{int(elapsed//60)} min ago" if elap
 cD.metric("⏱️ Updated", readable)
 
 # ───────────── breakdown pies ─────────────
-st.markdown("## 🔍 DAO Treasury Breakdown")
+st.markdown("## 🔍 Vault Positions Breakdown")
 pie1_col, pie2_col = st.columns(2)
 
 # ---------- chain pie ----------
@@ -592,7 +592,7 @@ st.markdown("---")
 # ───────────── history area charts ─────────────
 def load_history():
     try:
-        ws=_gc().open_by_key(SHEET_ID).worksheet("history")
+        ws=_gc().open_by_key(SHEET_ID).worksheet("liquid_vaults_history")
         h=pd.DataFrame(ws.get_all_records())
         h["usd_value"]=pd.to_numeric(h["usd_value"],errors="coerce")
         h["timestamp"]=pd.to_datetime(h["timestamp"],utc=True,errors="coerce")
