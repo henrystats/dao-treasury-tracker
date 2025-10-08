@@ -744,7 +744,7 @@ if not df_wallets_view.empty:
     
         csv_bytes = csv_df.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download CSV", csv_bytes,
-                           file_name="wallet_balances.csv",
+                           file_name="liquid_vaults_wallet_balances.csv",
                            mime="text/csv")
 
 else:
