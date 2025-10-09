@@ -203,6 +203,36 @@ def dune_prices() -> dict:
         st.warning(f"⚠️ Dune price fetch failed ({e}) – off-chain balances skipped.")
         return {}
 
+# ───────────── NEW: Dune rewards helper ─────────────
+@st.cache_data(ttl=600, show_spinner=False)
+def dune_rewards() -> pd.DataFrame:
+    """
+    Returns a tidy DataFrame with columns: day (UTC), protocol, rewards_usd (float)
+    Requires st.secrets["DUNE_REWARDS_QUERY_ID"] and st.secrets["DUNE_API_KEY"].
+    """
+    api = st.secrets["DUNE_API_KEY"]
+    qid = st.secrets["DUNE_REWARDS_QUERY_ID"]  # <-- add this to your secrets
+    url = f"https://api.dune.com/api/v1/query/{qid}/results?api_key={api}"
+    try:
+        resp = requests.get(url, timeout=20).json()
+        rows = resp["result"]["rows"]
+        df   = pd.DataFrame(rows)
+
+        # normalize & coerce
+        df.columns = [c.strip().lower() for c in df.columns]
+        df["day"] = pd.to_datetime(df["day"], utc=True, errors="coerce")
+        df["protocol"] = df["protocol"].astype(str)
+        # handle values like "2,753"
+        df["rewards_usd"] = pd.to_numeric(
+            df["rewards_usd"].astype(str).str.replace(",", ""),
+            errors="coerce"
+        )
+        df = df.dropna(subset=["day", "protocol", "rewards_usd"])
+        return df
+    except Exception as e:
+        st.warning(f"⚠️ Dune rewards fetch failed ({e}) – rewards charts hidden.")
+        return pd.DataFrame(columns=["day","protocol","rewards_usd"])
+
 # ───────────── helpers ─────────────
 def first_symbol(t): return t.get("optimized_symbol") or t.get("display_symbol") or t.get("symbol")
 def link_wallet(a):  return f"[{a[:6]}…{a[-4:]}](https://debank.com/profile/{a})"
@@ -652,6 +682,68 @@ if not hist.empty:
         fig_t.update_yaxes(tickformat="$~s")
         fig_t.update_xaxes(tickformat="%b %d %Y")
         area2.plotly_chart(fig_t,use_container_width=True)
+
+# ───────────── liquidETH Rewards (NEW) ─────────────
+st.markdown("## 🧃 liquidETH Rewards")
+
+rewards_df = dune_rewards()
+
+if not rewards_df.empty:
+    # Reuse color palette where possible
+    present = rewards_df["protocol"].unique().tolist()
+    colour_map = {p: COLOR_JSON[p] for p in present if p in COLOR_JSON}
+
+    # 1) Daily rewards per protocol (stacked bar)
+    rew_left, rew_right = st.columns(2)
+
+    daily = (
+        rewards_df
+        .groupby(["day", "protocol"], as_index=False)["rewards_usd"]
+        .sum()
+        .sort_values("day")
+    )
+    fig_rew_bar = px.bar(
+        daily,
+        x="day",
+        y="rewards_usd",
+        color="protocol",
+        barmode="stack",
+        color_discrete_map=colour_map,
+    )
+    fig_rew_bar.update_layout(
+        title="Daily Rewards by Protocol",
+        xaxis_title="Date",
+        yaxis_title="USD",
+        legend_title="Protocol",
+    )
+    fig_rew_bar.update_yaxes(tickformat="$~s")
+    fig_rew_bar.update_xaxes(tickformat="%b %d %Y")
+    rew_left.plotly_chart(fig_rew_bar, use_container_width=True)
+
+    # 2) Total rewards per protocol (pie)
+    totals = (
+        rewards_df
+        .groupby("protocol", as_index=False)["rewards_usd"]
+        .sum()
+        .sort_values("rewards_usd", ascending=False)
+    )
+    fig_rew_pie = px.pie(
+        totals,
+        names="protocol",
+        values="rewards_usd",
+        color="protocol",
+        color_discrete_map=colour_map,
+        hole=.35,
+    )
+    fig_rew_pie.update_traces(
+        texttemplate="%{label}<br>%{percent}<br>%{customdata}",
+        customdata=[fmt_usd(v) for v in totals["rewards_usd"]],
+        hovertemplate="protocol = %{label}<br>value = %{customdata}<extra></extra>",
+    )
+    fig_rew_pie.update_layout(title="Total Rewards by Protocol")
+    rew_right.plotly_chart(fig_rew_pie, use_container_width=True)
+else:
+    st.info("No rewards data returned yet.")
 
 st.markdown("---")
 
