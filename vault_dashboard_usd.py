@@ -563,10 +563,15 @@ st.markdown("## 🔍 Vault Positions Breakdown")
 pie1_col, pie2_col = st.columns(2)
 
 # ---------- chain pie ----------
+w_by_chain = df_wallets.groupby("Chain", dropna=False)["USD Value"].sum()
+p_by_chain = df_protocols.groupby("Blockchain", dropna=False)["USD Value"].sum()
+
+# use add(..., fill_value=0) so chains present in only one source don't turn into NaN
 chain_sum = (
-    df_wallets.groupby("Chain")["USD Value"].sum()
-    + df_protocols.groupby("Blockchain")["USD Value"].sum()
-).astype(float).sort_values(ascending=False)
+    w_by_chain.add(p_by_chain, fill_value=0)
+    .astype(float)
+    .sort_values(ascending=False)
+)
 
 if not chain_sum.empty:
     chain_df = chain_sum.reset_index()
