@@ -711,7 +711,7 @@ if not rewards_df.empty:
         color_discrete_map=colour_map,
     )
     fig_rew_bar.update_layout(
-        title="Daily Rewards by Protocol",
+        title="Weekly Rewards by Protocol",
         xaxis_title="Date",
         yaxis_title="USD",
         legend_title="Protocol",
